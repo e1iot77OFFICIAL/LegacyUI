@@ -647,7 +647,7 @@ function Tab:AddDropdown(opts)
         ScrollBarImageColor3 = S.DropdownBorder,
         Visible = false,
         ClipsDescendants = true,
-        ZIndex = 5,
+        ZIndex = 10,
     }, frame)
     stroke(list, S.DropdownBorder, 1)
     create("UIListLayout", {
