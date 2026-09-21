@@ -446,7 +446,7 @@ function Library:Notify(opts)
         Position = UDim2.new(0, 0, 0, 0),
     }, notify)
 
-    local titleLabel = create("TextLabel", {
+    create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -459,7 +459,7 @@ function Library:Notify(opts)
         Position = UDim2.new(0, 10, 0, 6),
     }, notify)
 
-    local bodyLabel = create("TextLabel", {
+    create("TextLabel", {
         Name = "Body",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -949,7 +949,7 @@ function Tab:AddColorPicker(opts)
     }, self.Frame)
     stroke(frame, S.Border, 1)
 
-    local title = create("TextLabel", {
+    create("TextLabel", {
         Name = "Title", BorderSizePixel = 0, BackgroundTransparency = 1,
         Text = opts.Text or "Color", TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1058,6 +1058,95 @@ function Tab:AddKeyPicker(opts)
     end)
 
     return frame
+end
+
+function Tab:CreateCollapsingHeader(name)
+    local S = self.Library.Scheme
+
+    local container = create("Frame", {
+        Name = name .. "Section",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.Element,
+        Size = UDim2.new(1, 0, 0, 30),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ClipsDescendants = false,
+    }, self.Frame)
+    stroke(container, S.Border, 1)
+    create("UIListLayout", {
+        Padding = UDim.new(0, 0),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, container)
+
+    local headerBtn = create("TextButton", {
+        Name = "Header",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        Size = UDim2.new(1, 0, 0, 30),
+        LayoutOrder = 0,
+    }, container)
+
+    local arrow = create("TextLabel", {
+        Name = "Arrow",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = "▼",
+        TextSize = 10,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(0, 20, 0, 30),
+        Position = UDim2.new(0, 4, 0, 0),
+    }, headerBtn)
+
+    create("TextLabel", {
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = name,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(1, -30, 1, 0),
+        Position = UDim2.new(0, 24, 0, 0),
+    }, headerBtn)
+
+    local inner = create("Frame", {
+        Name = "Inner",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 1,
+        ClipsDescendants = false,
+    }, container)
+    create("UIPadding", {
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 6),
+        PaddingRight = UDim.new(0, 6),
+    }, inner)
+    create("UIListLayout", {
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, inner)
+
+    local section = setmetatable({
+        Name = name,
+        Library = self.Library,
+        Frame = inner,
+        Container = container,
+        Open = true,
+    }, Tab)
+
+    headerBtn.MouseButton1Click:Connect(function()
+        section.Open = not section.Open
+        inner.Visible = section.Open
+        arrow.Text = section.Open and "▼" or "▶"
+    end)
+
+    return section
 end
 
 Library.Tab = Tab
