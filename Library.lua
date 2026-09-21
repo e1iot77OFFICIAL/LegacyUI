@@ -62,6 +62,9 @@ local Scheme = {
     ToggleBoxOffBorder = Color3.fromRGB(61, 55, 89),
     ToggleBoxOn        = Color3.fromRGB(156, 90, 255),
     ToggleBoxOnBorder  = Color3.fromRGB(156, 90, 255),
+
+    NotifyBackground = Color3.fromRGB(27, 23, 41),
+    NotifyBorder     = Color3.fromRGB(61, 55, 89),
 }
 
 local BODY_FONT = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -400,6 +403,88 @@ function Library:SelectTab(tab)
         end
     end
     self.ActiveTab = tab
+end
+
+function Library:Notify(opts)
+    opts = opts or {}
+    local S = self.Scheme
+
+    if not self.NotifyHolder then
+        self.NotifyHolder = create("Frame", {
+            Name = "NotifyHolder",
+            BorderSizePixel = 0,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 260, 1, -20),
+            Position = UDim2.new(1, -10, 0, 10),
+            AnchorPoint = Vector2.new(1, 0),
+        }, self.Gui)
+        create("UIListLayout", {
+            Padding = UDim.new(0, 6),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            VerticalAlignment = Enum.VerticalAlignment.Bottom,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            FillDirection = Enum.FillDirection.Vertical,
+        }, self.NotifyHolder)
+    end
+
+    local notify = create("Frame", {
+        Name = "Notify",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.NotifyBackground,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 50),
+        LayoutOrder = -tick(),
+    }, self.NotifyHolder)
+    stroke(notify, S.NotifyBorder, 1)
+
+    local accent = create("Frame", {
+        Name = "Accent",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.Accent,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 3, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+    }, notify)
+
+    local titleLabel = create("TextLabel", {
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = opts.Title or "Notification",
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(1, -16, 0, 18),
+        Position = UDim2.new(0, 10, 0, 6),
+    }, notify)
+
+    local bodyLabel = create("TextLabel", {
+        Name = "Body",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = opts.Body or "",
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true,
+        TextColor3 = S.TextDim,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(1, -16, 1, -26),
+        Position = UDim2.new(0, 10, 0, 24),
+    }, notify)
+
+    tween(notify, 0.25, { BackgroundTransparency = 0 })
+    tween(accent, 0.25, { BackgroundTransparency = 0 })
+
+    task.delay(opts.Time or 3, function()
+        if not notify or not notify.Parent then return end
+        tween(notify, 0.25, { BackgroundTransparency = 1 })
+        tween(accent, 0.25, { BackgroundTransparency = 1 })
+        task.wait(0.3)
+        if notify and notify.Parent then
+            notify:Destroy()
+        end
+    end)
 end
 
 function Library:Toggle()
