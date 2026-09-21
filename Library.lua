@@ -930,6 +930,136 @@ function Tab:AddToggle(opts)
     return frame
 end
 
+function Tab:AddColorPicker(opts)
+    local S = self.Library.Scheme
+    local currentColor = opts.Default or Color3.fromRGB(255, 255, 255)
+    local PRESETS = {
+        Red = Color3.fromRGB(255,60,60), Green = Color3.fromRGB(80,220,120),
+        Blue = Color3.fromRGB(90,170,255), Purple = Color3.fromRGB(170,0,255),
+        Yellow = Color3.fromRGB(255,255,0), Orange = Color3.fromRGB(255,170,0),
+        Cyan = Color3.fromRGB(0,200,255), Pink = Color3.fromRGB(255,105,180),
+        White = Color3.fromRGB(255,255,255), Black = Color3.fromRGB(0,0,0),
+    }
+
+    local frame = create("Frame", {
+        Name = "ColorPicker",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.Element,
+        Size = UDim2.new(1, 0, 0, 30),
+    }, self.Frame)
+    stroke(frame, S.Border, 1)
+
+    local title = create("TextLabel", {
+        Name = "Title", BorderSizePixel = 0, BackgroundTransparency = 1,
+        Text = opts.Text or "Color", TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text, FontFace = BODY_FONT,
+        Size = UDim2.new(0.6, -8, 1, 0), Position = UDim2.new(0, 8, 0, 0),
+    }, frame)
+
+    local preview = create("Frame", {
+        Name = "Preview", BorderSizePixel = 0,
+        BackgroundColor3 = currentColor,
+        Size = UDim2.new(0, 40, 0, 20),
+        Position = UDim2.new(1, -48, 0.5, -10),
+    }, frame)
+    stroke(preview, S.Border, 1)
+
+    local list = create("Frame", {
+        Name = "List", BorderSizePixel = 0,
+        BackgroundColor3 = S.DropdownItemIdle,
+        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 1, 2),
+        ClipsDescendants = true,
+        Visible = false, ZIndex = 50,
+    }, frame)
+    stroke(list, S.Border, 1)
+    create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+
+    local open = false
+    local function toggleList()
+        open = not open
+        list.Visible = open
+        list.Size = UDim2.new(1, 0, 0, open and (#PRESETS * 22 + 8) or 0)
+    end
+
+    frame.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then toggleList() end
+    end)
+
+    for name, color in pairs(PRESETS) do
+        local item = create("TextButton", {
+            Name = name, BorderSizePixel = 0,
+            BackgroundColor3 = color, Text = "  " .. name,
+            TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = Color3.fromRGB(255,255,255), FontFace = BODY_FONT,
+            Size = UDim2.new(1, 0, 0, 20), AutoButtonColor = false,
+        }, list)
+        stroke(item, S.Border, 1)
+        item.MouseButton1Click:Connect(function()
+            currentColor = color
+            preview.BackgroundColor3 = color
+            if opts.Callback then opts.Callback(color) end
+            toggleList()
+        end)
+    end
+
+    return frame
+end
+
+function Tab:AddKeyPicker(opts)
+    local S = self.Library.Scheme
+    local currentKey = opts.Default or "None"
+
+    local frame = create("Frame", {
+        Name = "KeyPicker", BorderSizePixel = 0,
+        BackgroundColor3 = S.Element, Size = UDim2.new(1, 0, 0, 30),
+    }, self.Frame)
+    stroke(frame, S.Border, 1)
+
+    create("TextLabel", {
+        Name = "Title", BorderSizePixel = 0, BackgroundTransparency = 1,
+        Text = opts.Text or "Keybind", TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = S.Text,
+        FontFace = BODY_FONT, Size = UDim2.new(0.6, -8, 1, 0), Position = UDim2.new(0, 8, 0, 0),
+    }, frame)
+
+    local btn = create("TextButton", {
+        Name = "KeyBtn", BorderSizePixel = 0,
+        BackgroundColor3 = S.DropdownItemIdle, Text = currentKey,
+        TextSize = 13, TextColor3 = S.Text, FontFace = BODY_FONT,
+        Size = UDim2.new(0, 60, 0, 20), Position = UDim2.new(1, -68, 0.5, -10),
+        AutoButtonColor = false,
+    }, frame)
+    stroke(btn, S.Border, 1)
+
+    local listening = false
+    btn.MouseButton1Click:Connect(function()
+        if listening then return end
+        listening = true
+        btn.Text = "..."
+        local conn
+        conn = userInput.InputBegan:Connect(function(inp, gpe)
+            if gpe then return end
+            if inp.UserInputType == Enum.UserInputType.Keyboard then
+                currentKey = inp.KeyCode.Name
+                btn.Text = currentKey
+                listening = false
+                if opts.Callback then opts.Callback(currentKey) end
+                conn:Disconnect()
+            elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                currentKey = "None"
+                btn.Text = "None"
+                listening = false
+                if opts.Callback then opts.Callback("None") end
+                conn:Disconnect()
+            end
+        end)
+    end)
+
+    return frame
+end
+
 Library.Tab = Tab
 
 return Library
