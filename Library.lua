@@ -639,16 +639,16 @@ function Tab:AddDropdown(opts)
         Name = "List",
         BorderSizePixel = 0,
         BackgroundColor3 = S.DropdownBackground,
-        Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 1, 2),
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 0),
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = S.DropdownBorder,
         Visible = false,
         ClipsDescendants = true,
-        ZIndex = 10,
-    }, frame)
+        ZIndex = 100,
+    }, self.Library.Main)
     stroke(list, S.DropdownBorder, 1)
     create("UIListLayout", {
         Padding = UDim.new(0, 2),
@@ -656,21 +656,72 @@ function Tab:AddDropdown(opts)
     }, list)
 
     local open = false
+    local connection = nil
 
-    local function toggle()
-        open = not open
-        list.Visible = open
-        if open then
-            local height = math.min(#values * 22 + 8, 150)
-            list.Size = UDim2.new(1, 0, 0, height)
-        else
-            list.Size = UDim2.new(1, 0, 0, 0)
+    local function positionList()
+        local main = self.Library.Main
+        local pos = frame.AbsolutePosition
+        local mainPos = main.AbsolutePosition
+        local height = math.min(#values * 22 + 8, 150)
+
+        list.Position = UDim2.fromOffset(
+            pos.X - mainPos.X,
+            pos.Y - mainPos.Y + frame.AbsoluteSize.Y + 2
+        )
+        list.Size = UDim2.new(0, frame.AbsoluteSize.X, 0, height)
+    end
+
+    local function openList()
+        open = true
+        list.Visible = true
+        positionList()
+
+        if connection then connection:Disconnect() end
+        connection = runService.Heartbeat:Connect(function()
+            if not open then return end
+            if not frame.Parent then
+                open = false
+                list.Visible = false
+                connection:Disconnect()
+                return
+            end
+            positionList()
+        end)
+    end
+
+    local function closeList()
+        open = false
+        list.Visible = false
+        if connection then
+            connection:Disconnect()
+            connection = nil
         end
     end
 
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            toggle()
+            if open then closeList() else openList() end
+        end
+    end)
+
+    userInput.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if not open then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+
+        local mousePos = userInput:GetMouseLocation()
+        local framePos = frame.AbsolutePosition
+        local frameSize = frame.AbsoluteSize
+        local listPos = list.AbsolutePosition
+        local listSize = list.AbsoluteSize
+
+        local insideFrame = mousePos.X >= framePos.X and mousePos.X <= framePos.X + frameSize.X
+            and mousePos.Y >= framePos.Y and mousePos.Y <= framePos.Y + frameSize.Y
+        local insideList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X
+            and mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
+
+        if not insideFrame and not insideList then
+            closeList()
         end
     end)
 
@@ -699,7 +750,7 @@ function Tab:AddDropdown(opts)
             selected = val
             valueLabel.Text = tostring(val)
             if opts.Callback then opts.Callback(val) end
-            toggle()
+            closeList()
         end)
     end
 
