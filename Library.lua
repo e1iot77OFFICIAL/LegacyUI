@@ -158,6 +158,8 @@ function Library:new(config)
     self.ActiveTab = nil
     self.Keybind = config.keybind or Enum.KeyCode.RightShift
     self.Visible = true
+    self.OpenDropdowns = {}
+    self.Connections = {}
 
     local S = self.Scheme
 
@@ -270,13 +272,41 @@ function Library:new(config)
     self.ButtonHolder = buttonHolder
     self.Content = content
 
-    userInput.InputBegan:Connect(function(input, gpe)
+    table.insert(self.Connections, userInput.InputBegan:Connect(function(input, gpe)
         if gpe then return end
         if input.KeyCode == self.Keybind then
             self.Visible = not self.Visible
             gui.Enabled = self.Visible
         end
-    end)
+    end))
+
+    table.insert(self.Connections, userInput.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        if #self.OpenDropdowns == 0 then return end
+
+        local mousePos = userInput:GetMouseLocation()
+        for i = #self.OpenDropdowns, 1, -1 do
+            local entry = self.OpenDropdowns[i]
+            if entry.Frame and entry.List and entry.Frame.Parent and entry.List.Parent then
+                local framePos = entry.Frame.AbsolutePosition
+                local frameSize = entry.Frame.AbsoluteSize
+                local listPos = entry.List.AbsolutePosition
+                local listSize = entry.List.AbsoluteSize
+
+                local insideFrame = mousePos.X >= framePos.X and mousePos.X <= framePos.X + frameSize.X
+                    and mousePos.Y >= framePos.Y and mousePos.Y <= framePos.Y + frameSize.Y
+                local insideList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X
+                    and mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
+
+                if not insideFrame and not insideList then
+                    entry.Close()
+                end
+            else
+                table.remove(self.OpenDropdowns, i)
+            end
+        end
+    end))
 
     return self
 end
@@ -378,6 +408,10 @@ function Library:Toggle()
 end
 
 function Library:Destroy()
+    for _, conn in ipairs(self.Connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    self.Connections = {}
     self.Gui:Destroy()
 end
 
@@ -657,9 +691,11 @@ function Tab:AddDropdown(opts)
 
     local open = false
     local connection = nil
+    local entry = nil
 
     local function positionList()
         local main = self.Library.Main
+        if not main or not main.Parent then return end
         local pos = frame.AbsolutePosition
         local mainPos = main.AbsolutePosition
         local height = math.min(#values * 22 + 8, 150)
@@ -679,10 +715,13 @@ function Tab:AddDropdown(opts)
         if connection then connection:Disconnect() end
         connection = runService.Heartbeat:Connect(function()
             if not open then return end
-            if not frame.Parent then
+            if not frame.Parent or not list.Parent or not self.Library.Main.Parent then
                 open = false
                 list.Visible = false
-                connection:Disconnect()
+                if connection then
+                    connection:Disconnect()
+                    connection = nil
+                end
                 return
             end
             positionList()
@@ -696,32 +735,28 @@ function Tab:AddDropdown(opts)
             connection:Disconnect()
             connection = nil
         end
+        local idx = table.find(self.Library.OpenDropdowns, entry)
+        if idx then
+            table.remove(self.Library.OpenDropdowns, idx)
+        end
     end
+
+    entry = {
+        Frame = frame,
+        List = list,
+        Close = closeList,
+    }
 
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if open then closeList() else openList() end
-        end
-    end)
-
-    userInput.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if not open then return end
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
-
-        local mousePos = userInput:GetMouseLocation()
-        local framePos = frame.AbsolutePosition
-        local frameSize = frame.AbsoluteSize
-        local listPos = list.AbsolutePosition
-        local listSize = list.AbsoluteSize
-
-        local insideFrame = mousePos.X >= framePos.X and mousePos.X <= framePos.X + frameSize.X
-            and mousePos.Y >= framePos.Y and mousePos.Y <= framePos.Y + frameSize.Y
-        local insideList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X
-            and mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
-
-        if not insideFrame and not insideList then
-            closeList()
+            if open then
+                closeList()
+            else
+                openList()
+                if not table.find(self.Library.OpenDropdowns, entry) then
+                    table.insert(self.Library.OpenDropdowns, entry)
+                end
+            end
         end
     end)
 
@@ -753,6 +788,13 @@ function Tab:AddDropdown(opts)
             closeList()
         end)
     end
+
+    frame.Destroying:Connect(function()
+        if connection then connection:Disconnect() end
+        local idx = table.find(self.Library.OpenDropdowns, entry)
+        if idx then table.remove(self.Library.OpenDropdowns, idx) end
+        if list then list:Destroy() end
+    end)
 
     return frame
 end
