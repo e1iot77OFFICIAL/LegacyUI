@@ -6,19 +6,19 @@ local coreGui = game:GetService("CoreGui")
 
 local Library = {}
 Library.__index = Library
-Library.Tree = {}
+
+local Tab = {}
+Tab.__index = Tab
 
 local Scheme = {
     Background   = Color3.fromRGB(21, 19, 31),
     Element      = Color3.fromRGB(37, 33, 53),
     ElementHover = Color3.fromRGB(46, 40, 66),
     Accent       = Color3.fromRGB(156, 90, 255),
-    AccentDim    = Color3.fromRGB(110, 62, 180),
     Text         = Color3.fromRGB(241, 241, 251),
     TextDim      = Color3.fromRGB(161, 161, 181),
     Border       = Color3.fromRGB(61, 55, 89),
     Danger       = Color3.fromRGB(255, 81, 81),
-    Info         = Color3.fromRGB(91, 171, 255),
 
     TitlebarBackground = Color3.fromRGB(11, 11, 11),
     TitlebarText       = Color3.fromRGB(156, 90, 255),
@@ -30,25 +30,24 @@ local Scheme = {
 
     ContentBackground = Color3.fromRGB(27, 23, 41),
 
-    ButtonBackground  = Color3.fromRGB(37, 33, 53),
-    ButtonBorder      = Color3.fromRGB(61, 55, 89),
-    ButtonText        = Color3.fromRGB(241, 241, 251),
+    ButtonBackground = Color3.fromRGB(37, 33, 53),
+    ButtonBorder     = Color3.fromRGB(61, 55, 89),
+    ButtonText       = Color3.fromRGB(241, 241, 251),
 
-    LabelBackground   = Color3.fromRGB(27, 23, 41),
-    LabelBorder       = Color3.fromRGB(51, 45, 75),
-    LabelText         = Color3.fromRGB(241, 241, 251),
+    LabelBackground = Color3.fromRGB(27, 23, 41),
+    LabelBorder     = Color3.fromRGB(51, 45, 75),
+    LabelText       = Color3.fromRGB(241, 241, 251),
 
-    InfoBackground    = Color3.fromRGB(21, 27, 41),
-    InfoBorder        = Color3.fromRGB(51, 91, 141),
-    InfoText          = Color3.fromRGB(91, 171, 255),
+    InfoBackground = Color3.fromRGB(21, 27, 41),
+    InfoBorder     = Color3.fromRGB(51, 91, 141),
+    InfoText       = Color3.fromRGB(91, 171, 255),
 
     WarningBackground = Color3.fromRGB(37, 21, 27),
     WarningBorder     = Color3.fromRGB(121, 41, 51),
     WarningText       = Color3.fromRGB(255, 81, 81),
 
-    SliderBackground  = Color3.fromRGB(29, 25, 43),
-    SliderFill        = Color3.fromRGB(156, 90, 255),
-    SliderThumb       = Color3.fromRGB(241, 241, 251),
+    SliderBackground = Color3.fromRGB(29, 25, 43),
+    SliderFill       = Color3.fromRGB(156, 90, 255),
 
     DropdownBackground = Color3.fromRGB(27, 23, 41),
     DropdownBorder     = Color3.fromRGB(51, 45, 75),
@@ -56,18 +55,13 @@ local Scheme = {
     DropdownItemIdle   = Color3.fromRGB(23, 21, 33),
     DropdownItemText   = Color3.fromRGB(241, 241, 251),
 
-    ToggleBackground  = Color3.fromRGB(37, 33, 53),
-    ToggleBorder      = Color3.fromRGB(61, 55, 89),
-    ToggleText        = Color3.fromRGB(201, 201, 216),
-    ToggleBoxOff      = Color3.fromRGB(29, 25, 43),
+    ToggleBackground   = Color3.fromRGB(37, 33, 53),
+    ToggleBorder       = Color3.fromRGB(61, 55, 89),
+    ToggleText         = Color3.fromRGB(201, 201, 216),
+    ToggleBoxOff       = Color3.fromRGB(29, 25, 43),
     ToggleBoxOffBorder = Color3.fromRGB(61, 55, 89),
-    ToggleBoxOn       = Color3.fromRGB(156, 90, 255),
-    ToggleBoxOnBorder = Color3.fromRGB(156, 90, 255),
-
-    NotifyBackground = Color3.fromRGB(27, 23, 41),
-    NotifyBorder     = Color3.fromRGB(61, 55, 89),
-    NotifyTitle      = Color3.fromRGB(241, 241, 251),
-    NotifyBody       = Color3.fromRGB(161, 161, 181),
+    ToggleBoxOn        = Color3.fromRGB(156, 90, 255),
+    ToggleBoxOnBorder  = Color3.fromRGB(156, 90, 255),
 }
 
 local BODY_FONT = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -96,7 +90,7 @@ end
 
 local function corner(parent, radius)
     return create("UICorner", {
-        CornerRadius = UDim.new(0, radius or 4),
+        CornerRadius = UDim.new(0, radius or 0),
     }, parent)
 end
 
@@ -138,6 +132,24 @@ local function getParent()
     return coreGui
 end
 
+local function clearOld()
+    local containers = {
+        players.LocalPlayer:FindFirstChild("PlayerGui"),
+        coreGui,
+    }
+    if gethui then
+        table.insert(containers, gethui())
+    end
+    for _, container in ipairs(containers) do
+        if container then
+            local old = container:FindFirstChild("Legacy")
+            if old then
+                old:Destroy()
+            end
+        end
+    end
+end
+
 function Library:new(config)
     config = config or {}
     local self = setmetatable({}, Library)
@@ -148,6 +160,8 @@ function Library:new(config)
     self.Visible = true
 
     local S = self.Scheme
+
+    clearOld()
 
     local gui = create("ScreenGui", {
         Name = "Legacy",
@@ -174,14 +188,6 @@ function Library:new(config)
         Position = UDim2.new(0, 0, 0, 0),
     }, main)
     stroke(topBar, S.Border, 2)
-
-    local ext = create("Frame", {
-        Name = "Extension",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Color3.fromRGB(26, 26, 26),
-        Size = UDim2.new(1, 0, 0.5, 0),
-        Position = UDim2.new(0, 0, 1, 0),
-    }, topBar)
 
     local title = create("TextLabel", {
         Name = "Title",
@@ -245,22 +251,13 @@ function Library:new(config)
         FillDirection = Enum.FillDirection.Horizontal,
     }, buttonHolder)
 
-    local content = create("ScrollingFrame", {
+    local content = create("Frame", {
         Name = "ContentContainer",
         BorderSizePixel = 0,
         BackgroundColor3 = S.ContentBackground,
-        Size = UDim2.new(1, -12, 1, -70),
+        Size = UDim2.new(1, -12, 1, -76),
         Position = UDim2.new(0, 6, 0, 64),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollingDirection = Enum.ScrollingDirection.Y,
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = S.Border,
-        ScrollBarImageTransparency = 0.3,
-        ElasticBehavior = Enum.ElasticBehavior.Never,
-        ScrollingEnabled = true,
-        Active = true,
-        Visible = false,
+        ClipsDescendants = true,
     }, main)
     stroke(content, S.Border, 1)
 
@@ -300,28 +297,39 @@ function Library:CreateTab(name)
     }, self.ButtonHolder)
     corner(btn, 4)
 
-    local frame = create("Frame", {
+    local scroll = create("ScrollingFrame", {
         Name = name .. "Tab",
         BorderSizePixel = 0,
-        BackgroundTransparency = 1,
+        BackgroundColor3 = S.ContentBackground,
+        BackgroundTransparency = 0,
         Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = S.Border,
+        ScrollBarImageTransparency = 0.3,
+        ElasticBehavior = Enum.ElasticBehavior.Never,
+        ScrollingEnabled = true,
+        Active = true,
         Visible = false,
     }, self.Content)
     create("UIListLayout", {
         Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder,
-    }, frame)
+    }, scroll)
     create("UIPadding", {
         PaddingTop = UDim.new(0, 8),
         PaddingBottom = UDim.new(0, 8),
         PaddingLeft = UDim.new(0, 8),
         PaddingRight = UDim.new(0, 8),
-    }, frame)
+    }, scroll)
 
     local tab = setmetatable({
         Name = name,
         Button = btn,
-        Frame = frame,
+        Frame = scroll,
         Library = self,
     }, Tab)
 
@@ -350,7 +358,6 @@ end
 
 function Library:SelectTab(tab)
     local S = self.Scheme
-    self.Content.Visible = true
     for _, t in ipairs(self.Tabs) do
         if t == tab then
             t.Button.BackgroundColor3 = S.NavActive
@@ -365,57 +372,6 @@ function Library:SelectTab(tab)
     self.ActiveTab = tab
 end
 
-function Library:Notify(opts)
-    opts = opts or {}
-    local S = self.Scheme
-
-    local notify = create("Frame", {
-        Name = "Notify",
-        BorderSizePixel = 0,
-        BackgroundColor3 = S.NotifyBackground,
-        Size = UDim2.new(0, 260, 0, 60),
-        Position = UDim2.new(1, 10, 1, -70),
-        AnchorPoint = Vector2.new(1, 1),
-    }, self.Gui)
-    stroke(notify, S.NotifyBorder, 1)
-    corner(notify, 4)
-
-    create("TextLabel", {
-        Name = "Title",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = opts.Title or "Notification",
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = S.NotifyTitle,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(1, -16, 0, 20),
-        Position = UDim2.new(0, 8, 0, 6),
-    }, notify)
-
-    create("TextLabel", {
-        Name = "Body",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = opts.Body or "",
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        TextColor3 = S.NotifyBody,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(1, -16, 1, -30),
-        Position = UDim2.new(0, 8, 0, 26),
-    }, notify)
-
-    tween(notify, 0.3, { Position = UDim2.new(1, -10, 1, -70) })
-
-    task.delay(opts.Time or 3, function()
-        tween(notify, 0.3, { Position = UDim2.new(1, 10, 1, -70) })
-        task.wait(0.3)
-        notify:Destroy()
-    end)
-end
-
 function Library:Toggle()
     self.Visible = not self.Visible
     self.Gui.Enabled = self.Visible
@@ -424,9 +380,6 @@ end
 function Library:Destroy()
     self.Gui:Destroy()
 end
-
-local Tab = {}
-Tab.__index = Tab
 
 function Tab:AddButton(opts)
     local S = self.Library.Scheme
@@ -558,22 +511,9 @@ function Tab:AddSlider(opts)
         Name = "Slider",
         BorderSizePixel = 0,
         BackgroundColor3 = S.Element,
-        Size = UDim2.new(1, 0, 0, 48),
+        Size = UDim2.new(1, 0, 0, 40),
     }, self.Frame)
     stroke(frame, S.Border, 1)
-
-    local title = create("TextLabel", {
-        Name = "Title",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = opts.Text or "Slider",
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = S.Text,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(0.7, -8, 0, 20),
-        Position = UDim2.new(0, 8, 0, 4),
-    }, frame)
 
     local valueLabel = create("TextLabel", {
         Name = "Value",
@@ -584,45 +524,49 @@ function Tab:AddSlider(opts)
         TextXAlignment = Enum.TextXAlignment.Right,
         TextColor3 = S.Text,
         FontFace = BODY_FONT,
-        Size = UDim2.new(0.3, -8, 0, 20),
-        Position = UDim2.new(0.7, 0, 0, 4),
+        Size = UDim2.new(0.2, -8, 0, 14),
+        Position = UDim2.new(0.8, 0, 0, 2),
+        ZIndex = 3,
     }, frame)
 
     local back = create("Frame", {
         Name = "SliderBack",
         BorderSizePixel = 0,
         BackgroundColor3 = S.SliderBackground,
-        Size = UDim2.new(1, -16, 0, 8),
-        Position = UDim2.new(0, 8, 0, 32),
+        Size = UDim2.new(1, -16, 0, 13),
+        Position = UDim2.new(0, 8, 0, 22),
+        ZIndex = 1,
     }, frame)
-    corner(back, 4)
 
     local fill = create("Frame", {
         Name = "Draggable",
         BorderSizePixel = 0,
         BackgroundColor3 = S.SliderFill,
         Size = UDim2.new(0, 0, 1, 0),
+        ZIndex = 2,
     }, back)
-    corner(fill, 4)
 
-    local thumb = create("Frame", {
-        Name = "Thumb",
+    local title = create("TextLabel", {
+        Name = "Title",
         BorderSizePixel = 0,
-        BackgroundColor3 = S.SliderThumb,
-        Size = UDim2.new(0, 12, 0, 12),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0, 0, 0.5, 0),
-    }, back)
-    corner(thumb, 6)
+        BackgroundTransparency = 1,
+        Text = opts.Text or "Slider",
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        FontFace = BODY_FONT,
+        Size = UDim2.new(1, 0, 0, 13),
+        Position = UDim2.new(0, 0, 0, 22),
+        ZIndex = 3,
+    }, frame)
 
     local dragging = false
 
     local function update(input)
         local pos = math.clamp((input.Position.X - back.AbsolutePosition.X) / back.AbsoluteSize.X, 0, 1)
-        local val = math.floor(min + (max - min) * pos)
+        local val = math.floor(min + (max - min) * pos + 0.5)
         value = val
         fill.Size = UDim2.new(pos, 0, 1, 0)
-        thumb.Position = UDim2.new(pos, 0, 0.5, 0)
         valueLabel.Text = tostring(val)
         if opts.Callback then opts.Callback(val) end
     end
@@ -648,7 +592,6 @@ function Tab:AddSlider(opts)
 
     local initPos = (value - min) / (max - min)
     fill.Size = UDim2.new(initPos, 0, 1, 0)
-    thumb.Position = UDim2.new(initPos, 0, 0.5, 0)
 
     return frame
 end
@@ -692,18 +635,6 @@ function Tab:AddDropdown(opts)
         Position = UDim2.new(0.5, 0, 0, 0),
     }, frame)
 
-    local arrow = create("TextLabel", {
-        Name = "Arrow",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = "▼",
-        TextSize = 10,
-        TextColor3 = S.DropdownText,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(0, 20, 1, 0),
-        Position = UDim2.new(1, -22, 0, 0),
-    }, frame)
-
     local list = create("ScrollingFrame", {
         Name = "List",
         BorderSizePixel = 0,
@@ -714,7 +645,7 @@ function Tab:AddDropdown(opts)
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = S.DropdownBorder,
-        Visible = true,
+        Visible = false,
         ClipsDescendants = true,
         ZIndex = 5,
     }, frame)
@@ -726,24 +657,20 @@ function Tab:AddDropdown(opts)
 
     local open = false
 
-    local function toggleList()
+    local function toggle()
         open = not open
-        arrow.Text = open and "▲" or "▼"
+        list.Visible = open
         if open then
-            list.Visible = true
             local height = math.min(#values * 22 + 8, 150)
-            tween(list, 0.15, { Size = UDim2.new(1, 0, 0, height) })
+            list.Size = UDim2.new(1, 0, 0, height)
         else
-            tween(list, 0.15, { Size = UDim2.new(1, 0, 0, 0) })
-            task.delay(0.15, function()
-                if not open then list.Visible = false end
-            end)
+            list.Size = UDim2.new(1, 0, 0, 0)
         end
     end
 
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            toggleList()
+            toggle()
         end
     end)
 
@@ -763,16 +690,16 @@ function Tab:AddDropdown(opts)
         create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, item)
 
         item.MouseEnter:Connect(function()
-            tween(item, 0.1, { BackgroundColor3 = S.ElementHover })
+            item.BackgroundColor3 = S.ElementHover
         end)
         item.MouseLeave:Connect(function()
-            tween(item, 0.1, { BackgroundColor3 = S.DropdownItemIdle })
+            item.BackgroundColor3 = S.DropdownItemIdle
         end)
         item.MouseButton1Click:Connect(function()
             selected = val
             valueLabel.Text = tostring(val)
             if opts.Callback then opts.Callback(val) end
-            toggleList()
+            toggle()
         end)
     end
 
@@ -817,8 +744,8 @@ function Tab:AddToggle(opts)
 
     frame.MouseButton1Click:Connect(function()
         state = not state
-        tween(box, 0.15, { BackgroundColor3 = state and S.ToggleBoxOn or S.ToggleBoxOff })
-        tween(boxStroke, 0.15, { Color = state and S.ToggleBoxOnBorder or S.ToggleBoxOffBorder })
+        box.BackgroundColor3 = state and S.ToggleBoxOn or S.ToggleBoxOff
+        boxStroke.Color = state and S.ToggleBoxOnBorder or S.ToggleBoxOffBorder
         if opts.Callback then opts.Callback(state) end
     end)
 
