@@ -10,61 +10,65 @@ Library.__index = Library
 local Tab = {}
 Tab.__index = Tab
 
+local GroupBox = {}
+GroupBox.__index = GroupBox
+
 local Scheme = {
-    Background   = Color3.fromRGB(21, 19, 31),
-    Element      = Color3.fromRGB(37, 33, 53),
+    Background = Color3.fromRGB(21, 19, 31),
+    Element = Color3.fromRGB(37, 33, 53),
     ElementHover = Color3.fromRGB(46, 40, 66),
-    Accent       = Color3.fromRGB(156, 90, 255),
-    Text         = Color3.fromRGB(241, 241, 251),
-    TextDim      = Color3.fromRGB(161, 161, 181),
-    Border       = Color3.fromRGB(61, 55, 89),
-    Danger       = Color3.fromRGB(255, 81, 81),
+    Accent = Color3.fromRGB(156, 90, 255),
+    Text = Color3.fromRGB(241, 241, 251),
+    TextDim = Color3.fromRGB(161, 161, 181),
+    Border = Color3.fromRGB(61, 55, 89),
+    Danger = Color3.fromRGB(255, 81, 81),
 
     TitlebarBackground = Color3.fromRGB(11, 11, 11),
-    TitlebarText       = Color3.fromRGB(156, 90, 255),
+    TitlebarText = Color3.fromRGB(156, 90, 255),
 
     NavBackground = Color3.fromRGB(27, 23, 41),
-    NavIdleText   = Color3.fromRGB(161, 161, 181),
-    NavActive     = Color3.fromRGB(37, 33, 53),
+    NavIdleText = Color3.fromRGB(161, 161, 181),
+    NavActive = Color3.fromRGB(37, 33, 53),
     NavActiveText = Color3.fromRGB(156, 90, 255),
 
     ContentBackground = Color3.fromRGB(27, 23, 41),
+    GroupBoxBackground = Color3.fromRGB(37, 33, 53),
 
     ButtonBackground = Color3.fromRGB(37, 33, 53),
-    ButtonBorder     = Color3.fromRGB(61, 55, 89),
-    ButtonText       = Color3.fromRGB(241, 241, 251),
+    ButtonBorder = Color3.fromRGB(61, 55, 89),
+    ButtonText = Color3.fromRGB(241, 241, 251),
 
     LabelBackground = Color3.fromRGB(27, 23, 41),
-    LabelBorder     = Color3.fromRGB(51, 45, 75),
-    LabelText       = Color3.fromRGB(241, 241, 251),
+    LabelBorder = Color3.fromRGB(51, 45, 75),
+    LabelText = Color3.fromRGB(241, 241, 251),
 
     InfoBackground = Color3.fromRGB(21, 27, 41),
-    InfoBorder     = Color3.fromRGB(51, 91, 141),
-    InfoText       = Color3.fromRGB(91, 171, 255),
+    InfoBorder = Color3.fromRGB(51, 91, 141),
+    InfoText = Color3.fromRGB(91, 171, 255),
 
     WarningBackground = Color3.fromRGB(37, 21, 27),
-    WarningBorder     = Color3.fromRGB(121, 41, 51),
-    WarningText       = Color3.fromRGB(255, 81, 81),
+    WarningBorder = Color3.fromRGB(121, 41, 51),
+    WarningText = Color3.fromRGB(255, 81, 81),
 
     SliderBackground = Color3.fromRGB(29, 25, 43),
-    SliderFill       = Color3.fromRGB(156, 90, 255),
+    SliderFill = Color3.fromRGB(156, 90, 255),
 
     DropdownBackground = Color3.fromRGB(27, 23, 41),
-    DropdownBorder     = Color3.fromRGB(51, 45, 75),
-    DropdownText       = Color3.fromRGB(241, 241, 251),
-    DropdownItemIdle   = Color3.fromRGB(23, 21, 33),
-    DropdownItemText   = Color3.fromRGB(241, 241, 251),
+    DropdownBorder = Color3.fromRGB(51, 45, 75),
+    DropdownText = Color3.fromRGB(241, 241, 251),
+    DropdownItemIdle = Color3.fromRGB(23, 21, 33),
+    DropdownItemText = Color3.fromRGB(241, 241, 251),
 
-    ToggleBackground   = Color3.fromRGB(37, 33, 53),
-    ToggleBorder       = Color3.fromRGB(61, 55, 89),
-    ToggleText         = Color3.fromRGB(201, 201, 216),
-    ToggleBoxOff       = Color3.fromRGB(29, 25, 43),
+    ToggleBackground = Color3.fromRGB(37, 33, 53),
+    ToggleBorder = Color3.fromRGB(61, 55, 89),
+    ToggleText = Color3.fromRGB(201, 201, 216),
+    ToggleBoxOff = Color3.fromRGB(29, 25, 43),
     ToggleBoxOffBorder = Color3.fromRGB(61, 55, 89),
-    ToggleBoxOn        = Color3.fromRGB(156, 90, 255),
-    ToggleBoxOnBorder  = Color3.fromRGB(156, 90, 255),
+    ToggleBoxOn = Color3.fromRGB(156, 90, 255),
+    ToggleBoxOnBorder = Color3.fromRGB(156, 90, 255),
 
     NotifyBackground = Color3.fromRGB(27, 23, 41),
-    NotifyBorder     = Color3.fromRGB(61, 55, 89),
+    NotifyBorder = Color3.fromRGB(61, 55, 89),
 }
 
 local BODY_FONT = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -211,7 +215,7 @@ function Library:new(config)
         Name = "ExitBtn",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
-        Text = "✕",
+        Text = "X",
         TextSize = 16,
         TextColor3 = S.TextDim,
         FontFace = BODY_FONT,
@@ -330,40 +334,24 @@ function Library:CreateTab(name)
     }, self.ButtonHolder)
     corner(btn, 4)
 
-    local scroll = create("ScrollingFrame", {
+    local tabFrame = create("Frame", {
         Name = name .. "Tab",
         BorderSizePixel = 0,
         BackgroundColor3 = S.ContentBackground,
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollingDirection = Enum.ScrollingDirection.Y,
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = S.Border,
-        ScrollBarImageTransparency = 0.3,
-        ElasticBehavior = Enum.ElasticBehavior.Never,
-        ScrollingEnabled = true,
-        Active = true,
         Visible = false,
+        ClipsDescendants = true,
     }, self.Content)
-    create("UIListLayout", {
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    }, scroll)
-    create("UIPadding", {
-        PaddingTop = UDim.new(0, 8),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8),
-    }, scroll)
 
     local tab = setmetatable({
         Name = name,
         Button = btn,
-        Frame = scroll,
+        Frame = tabFrame,
         Library = self,
+        LeftGB = nil,
+        RightGB = nil,
     }, Tab)
 
     btn.MouseEnter:Connect(function()
@@ -433,7 +421,7 @@ function Library:Notify(opts)
         BackgroundColor3 = S.NotifyBackground,
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 0, 50),
-        LayoutOrder = -tick(),
+        LayoutOrder = math.floor(tick() * 1000),
     }, self.NotifyHolder)
     stroke(notify, S.NotifyBorder, 1)
 
@@ -500,7 +488,123 @@ function Library:Destroy()
     self.Gui:Destroy()
 end
 
-function Tab:AddButton(opts)
+function Tab:AddLeftGB(name)
+    local existing = self.LeftGB
+    if existing then
+        existing:SetTitle(name)
+        return existing
+    end
+    local gb = GroupBox.new(name, self.Frame, "left", self.Library)
+    self.LeftGB = gb
+    return gb
+end
+
+function Tab:AddRightGB(name)
+    local existing = self.RightGB
+    if existing then
+        existing:SetTitle(name)
+        return existing
+    end
+    local gb = GroupBox.new(name, self.Frame, "right", self.Library)
+    self.RightGB = gb
+    return gb
+end
+
+function GroupBox.new(name, parent, side, library)
+    local S = library.Scheme
+    local gb = setmetatable({
+        Name = name,
+        Library = library,
+        Side = side,
+        Items = 0,
+    }, GroupBox)
+
+    local isLeft = side == "left"
+    local container = create("Frame", {
+        Name = isLeft and "GbLeft" or "GbRight",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.GroupBoxBackground,
+        Size = UDim2.new(0.5, -4, 1, 0),
+        Position = isLeft and UDim2.new(0, 0, 0, 0) or UDim2.new(0.5, 4, 0, 0),
+        ClipsDescendants = true,
+    }, parent)
+    stroke(container, S.Border, 1)
+
+    local header = create("Frame", {
+        Name = "Header",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 26),
+        Position = UDim2.new(0, 0, 0, 0),
+        ZIndex = 5,
+    }, container)
+
+    local title = create("TextLabel", {
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = name,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(1, -16, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
+        ZIndex = 6,
+    }, header)
+
+    local scroll = create("ScrollingFrame", {
+        Name = "Scroll",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, -26),
+        Position = UDim2.new(0, 0, 0, 26),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = S.Border,
+        ScrollBarImageTransparency = 0.3,
+        ElasticBehavior = Enum.ElasticBehavior.Never,
+        ClipsDescendants = true,
+        Active = true,
+    }, container)
+
+    local inner = create("Frame", {
+        Name = "Inner",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, -16, 0, 0),
+        Position = UDim2.new(0, 8, 0, 6),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ClipsDescendants = false,
+        ZIndex = 1,
+    }, scroll)
+    create("UIListLayout", {
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, inner)
+
+    gb.Frame = container
+    gb.Header = header
+    gb.TitleLabel = title
+    gb.Scroll = scroll
+    gb.Inner = inner
+
+    return gb
+end
+
+function GroupBox:SetTitle(text)
+    self.TitleLabel.Text = text
+    self.Name = text
+end
+
+function GroupBox:NextOrder()
+    self.Items = self.Items + 1
+    return self.Items
+end
+
+function GroupBox:AddButton(opts)
     local S = self.Library.Scheme
 
     local btn = create("TextButton", {
@@ -510,10 +614,11 @@ function Tab:AddButton(opts)
         Text = "",
         AutoButtonColor = false,
         Size = UDim2.new(1, 0, 0, 40),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(btn, S.ButtonBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -524,7 +629,7 @@ function Tab:AddButton(opts)
         FontFace = BODY_FONT,
         Size = UDim2.new(1, -20, 1, 0),
     }, btn)
-    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, title)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, label)
 
     btn.MouseEnter:Connect(function()
         tween(btn, 0.15, { BackgroundColor3 = S.ElementHover })
@@ -539,7 +644,7 @@ function Tab:AddButton(opts)
     return btn
 end
 
-function Tab:AddLabel(opts)
+function GroupBox:AddLabel(opts)
     local S = self.Library.Scheme
 
     local frame = create("Frame", {
@@ -547,10 +652,11 @@ function Tab:AddLabel(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.LabelBackground,
         Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.LabelBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -561,12 +667,12 @@ function Tab:AddLabel(opts)
         FontFace = BODY_FONT,
         Size = UDim2.new(1, -20, 1, 0),
     }, frame)
-    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, title)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, label)
 
     return frame
 end
 
-function Tab:AddInfo(opts)
+function GroupBox:AddInfo(opts)
     local S = self.Library.Scheme
 
     local frame = create("Frame", {
@@ -574,10 +680,11 @@ function Tab:AddInfo(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.InfoBackground,
         Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.InfoBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -588,12 +695,12 @@ function Tab:AddInfo(opts)
         FontFace = BODY_FONT,
         Size = UDim2.new(1, -20, 1, 0),
     }, frame)
-    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, title)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, label)
 
     return frame
 end
 
-function Tab:AddWarning(opts)
+function GroupBox:AddWarning(opts)
     local S = self.Library.Scheme
 
     local frame = create("Frame", {
@@ -601,10 +708,11 @@ function Tab:AddWarning(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.WarningBackground,
         Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.WarningBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -615,12 +723,12 @@ function Tab:AddWarning(opts)
         FontFace = BODY_FONT,
         Size = UDim2.new(1, -20, 1, 0),
     }, frame)
-    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, title)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, label)
 
     return frame
 end
 
-function Tab:AddSlider(opts)
+function GroupBox:AddSlider(opts)
     local S = self.Library.Scheme
     local min = opts.Min or 0
     local max = opts.Max or 100
@@ -630,9 +738,24 @@ function Tab:AddSlider(opts)
         Name = "Slider",
         BorderSizePixel = 0,
         BackgroundColor3 = S.Element,
-        Size = UDim2.new(1, 0, 0, 40),
-    }, self.Frame)
+        Size = UDim2.new(1, 0, 0, 44),
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.Border, 1)
+
+    local label = create("TextLabel", {
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = opts.Text or "Slider",
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(0.6, -8, 0, 16),
+        Position = UDim2.new(0, 8, 0, 2),
+        ZIndex = 3,
+    }, frame)
 
     local valueLabel = create("TextLabel", {
         Name = "Value",
@@ -643,8 +766,8 @@ function Tab:AddSlider(opts)
         TextXAlignment = Enum.TextXAlignment.Right,
         TextColor3 = S.Text,
         FontFace = BODY_FONT,
-        Size = UDim2.new(0.2, -8, 0, 14),
-        Position = UDim2.new(0.8, 0, 0, 2),
+        Size = UDim2.new(0.4, -8, 0, 16),
+        Position = UDim2.new(0.6, 0, 0, 2),
         ZIndex = 3,
     }, frame)
 
@@ -653,7 +776,7 @@ function Tab:AddSlider(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.SliderBackground,
         Size = UDim2.new(1, -16, 0, 13),
-        Position = UDim2.new(0, 8, 0, 22),
+        Position = UDim2.new(0, 8, 0, 24),
         ZIndex = 1,
     }, frame)
 
@@ -664,20 +787,6 @@ function Tab:AddSlider(opts)
         Size = UDim2.new(0, 0, 1, 0),
         ZIndex = 2,
     }, back)
-
-    local title = create("TextLabel", {
-        Name = "Title",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = opts.Text or "Slider",
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        FontFace = BODY_FONT,
-        Size = UDim2.new(1, 0, 0, 13),
-        Position = UDim2.new(0, 0, 0, 22),
-        ZIndex = 3,
-    }, frame)
 
     local dragging = false
 
@@ -715,7 +824,7 @@ function Tab:AddSlider(opts)
     return frame
 end
 
-function Tab:AddDropdown(opts)
+function GroupBox:AddDropdown(opts)
     local S = self.Library.Scheme
     local values = opts.Values or {}
     local selected = opts.Default or values[1]
@@ -725,10 +834,11 @@ function Tab:AddDropdown(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.DropdownBackground,
         Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.DropdownBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -884,7 +994,7 @@ function Tab:AddDropdown(opts)
     return frame
 end
 
-function Tab:AddToggle(opts)
+function GroupBox:AddToggle(opts)
     local S = self.Library.Scheme
     local state = opts.Default or false
 
@@ -895,10 +1005,11 @@ function Tab:AddToggle(opts)
         Text = "",
         AutoButtonColor = false,
         Size = UDim2.new(1, 0, 0, 40),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.ToggleBorder, 1)
 
-    local title = create("TextLabel", {
+    local label = create("TextLabel", {
         Name = "Title",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
@@ -930,15 +1041,20 @@ function Tab:AddToggle(opts)
     return frame
 end
 
-function Tab:AddColorPicker(opts)
+function GroupBox:AddColorPicker(opts)
     local S = self.Library.Scheme
     local currentColor = opts.Default or Color3.fromRGB(255, 255, 255)
     local PRESETS = {
-        Red = Color3.fromRGB(255,60,60), Green = Color3.fromRGB(80,220,120),
-        Blue = Color3.fromRGB(90,170,255), Purple = Color3.fromRGB(170,0,255),
-        Yellow = Color3.fromRGB(255,255,0), Orange = Color3.fromRGB(255,170,0),
-        Cyan = Color3.fromRGB(0,200,255), Pink = Color3.fromRGB(255,105,180),
-        White = Color3.fromRGB(255,255,255), Black = Color3.fromRGB(0,0,0),
+        Red = Color3.fromRGB(255, 60, 60),
+        Green = Color3.fromRGB(80, 220, 120),
+        Blue = Color3.fromRGB(90, 170, 255),
+        Purple = Color3.fromRGB(170, 0, 255),
+        Yellow = Color3.fromRGB(255, 255, 0),
+        Orange = Color3.fromRGB(255, 170, 0),
+        Cyan = Color3.fromRGB(0, 200, 255),
+        Pink = Color3.fromRGB(255, 105, 180),
+        White = Color3.fromRGB(255, 255, 255),
+        Black = Color3.fromRGB(0, 0, 0),
     }
 
     local frame = create("Frame", {
@@ -946,19 +1062,26 @@ function Tab:AddColorPicker(opts)
         BorderSizePixel = 0,
         BackgroundColor3 = S.Element,
         Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.Border, 1)
 
     create("TextLabel", {
-        Name = "Title", BorderSizePixel = 0, BackgroundTransparency = 1,
-        Text = opts.Text or "Color", TextSize = 14,
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = opts.Text or "Color",
+        TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = S.Text, FontFace = BODY_FONT,
-        Size = UDim2.new(0.6, -8, 1, 0), Position = UDim2.new(0, 8, 0, 0),
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(0.6, -8, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
     }, frame)
 
     local preview = create("Frame", {
-        Name = "Preview", BorderSizePixel = 0,
+        Name = "Preview",
+        BorderSizePixel = 0,
         BackgroundColor3 = currentColor,
         Size = UDim2.new(0, 40, 0, 20),
         Position = UDim2.new(1, -48, 0.5, -10),
@@ -966,12 +1089,14 @@ function Tab:AddColorPicker(opts)
     stroke(preview, S.Border, 1)
 
     local list = create("Frame", {
-        Name = "List", BorderSizePixel = 0,
+        Name = "List",
+        BorderSizePixel = 0,
         BackgroundColor3 = S.DropdownItemIdle,
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 1, 2),
         ClipsDescendants = true,
-        Visible = false, ZIndex = 50,
+        Visible = false,
+        ZIndex = 50,
     }, frame)
     stroke(list, S.Border, 1)
     create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }, list)
@@ -989,11 +1114,16 @@ function Tab:AddColorPicker(opts)
 
     for name, color in pairs(PRESETS) do
         local item = create("TextButton", {
-            Name = name, BorderSizePixel = 0,
-            BackgroundColor3 = color, Text = "  " .. name,
-            TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
-            TextColor3 = Color3.fromRGB(255,255,255), FontFace = BODY_FONT,
-            Size = UDim2.new(1, 0, 0, 20), AutoButtonColor = false,
+            Name = name,
+            BorderSizePixel = 0,
+            BackgroundColor3 = color,
+            Text = "  " .. name,
+            TextSize = 13,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            FontFace = BODY_FONT,
+            Size = UDim2.new(1, 0, 0, 20),
+            AutoButtonColor = false,
         }, list)
         stroke(item, S.Border, 1)
         item.MouseButton1Click:Connect(function()
@@ -1007,28 +1137,42 @@ function Tab:AddColorPicker(opts)
     return frame
 end
 
-function Tab:AddKeyPicker(opts)
+function GroupBox:AddKeyPicker(opts)
     local S = self.Library.Scheme
     local currentKey = opts.Default or "None"
 
     local frame = create("Frame", {
-        Name = "KeyPicker", BorderSizePixel = 0,
-        BackgroundColor3 = S.Element, Size = UDim2.new(1, 0, 0, 30),
-    }, self.Frame)
+        Name = "KeyPicker",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.Element,
+        Size = UDim2.new(1, 0, 0, 30),
+        LayoutOrder = self:NextOrder(),
+    }, self.Inner)
     stroke(frame, S.Border, 1)
 
     create("TextLabel", {
-        Name = "Title", BorderSizePixel = 0, BackgroundTransparency = 1,
-        Text = opts.Text or "Keybind", TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = S.Text,
-        FontFace = BODY_FONT, Size = UDim2.new(0.6, -8, 1, 0), Position = UDim2.new(0, 8, 0, 0),
+        Name = "Title",
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        Text = opts.Text or "Keybind",
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(0.6, -8, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
     }, frame)
 
     local btn = create("TextButton", {
-        Name = "KeyBtn", BorderSizePixel = 0,
-        BackgroundColor3 = S.DropdownItemIdle, Text = currentKey,
-        TextSize = 13, TextColor3 = S.Text, FontFace = BODY_FONT,
-        Size = UDim2.new(0, 60, 0, 20), Position = UDim2.new(1, -68, 0.5, -10),
+        Name = "KeyBtn",
+        BorderSizePixel = 0,
+        BackgroundColor3 = S.DropdownItemIdle,
+        Text = currentKey,
+        TextSize = 13,
+        TextColor3 = S.Text,
+        FontFace = BODY_FONT,
+        Size = UDim2.new(0, 60, 0, 20),
+        Position = UDim2.new(1, -68, 0.5, -10),
         AutoButtonColor = false,
     }, frame)
     stroke(btn, S.Border, 1)
@@ -1060,95 +1204,7 @@ function Tab:AddKeyPicker(opts)
     return frame
 end
 
-function Tab:CreateCollapsingHeader(name)
-    local S = self.Library.Scheme
-
-    local container = create("Frame", {
-        Name = name .. "Section",
-        BorderSizePixel = 0,
-        BackgroundColor3 = S.Element,
-        Size = UDim2.new(1, 0, 0, 30),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        ClipsDescendants = false,
-    }, self.Frame)
-    stroke(container, S.Border, 1)
-    create("UIListLayout", {
-        Padding = UDim.new(0, 0),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    }, container)
-
-    local headerBtn = create("TextButton", {
-        Name = "Header",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = "",
-        AutoButtonColor = false,
-        Size = UDim2.new(1, 0, 0, 30),
-        LayoutOrder = 0,
-    }, container)
-
-    local arrow = create("TextLabel", {
-        Name = "Arrow",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = "▼",
-        TextSize = 10,
-        TextColor3 = S.Text,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(0, 20, 0, 30),
-        Position = UDim2.new(0, 4, 0, 0),
-    }, headerBtn)
-
-    create("TextLabel", {
-        Name = "Title",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Text = name,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = S.Text,
-        FontFace = BODY_FONT,
-        Size = UDim2.new(1, -30, 1, 0),
-        Position = UDim2.new(0, 24, 0, 0),
-    }, headerBtn)
-
-    local inner = create("Frame", {
-        Name = "Inner",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = 1,
-        ClipsDescendants = false,
-    }, container)
-    create("UIPadding", {
-        PaddingTop = UDim.new(0, 6),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 6),
-        PaddingRight = UDim.new(0, 6),
-    }, inner)
-    create("UIListLayout", {
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    }, inner)
-
-    local section = setmetatable({
-        Name = name,
-        Library = self.Library,
-        Frame = inner,
-        Container = container,
-        Open = true,
-    }, Tab)
-
-    headerBtn.MouseButton1Click:Connect(function()
-        section.Open = not section.Open
-        inner.Visible = section.Open
-        arrow.Text = section.Open and "▼" or "▶"
-    end)
-
-    return section
-end
-
 Library.Tab = Tab
+Library.GroupBox = GroupBox
 
 return Library
