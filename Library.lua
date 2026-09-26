@@ -184,6 +184,10 @@ local function RegisterOption(Id, Entry)
     end
 end
 
+local CreateToggle, CreateSlider, CreateDropdown, CreateButton
+local CreateLabel, CreateInfo, CreateWarning, CreateColorPicker
+local CreateKeyPicker, CreateInput
+
 local function CreateGroupBox(Tab, Name, Side)
     if Tab.__GB[Side] then
         if Name then Tab.__GB[Side].Header.Text = Name end
@@ -245,17 +249,11 @@ local function CreateGroupBox(Tab, Name, Side)
         Scroll = Scroll,
         Tab = Tab,
         Section = Tab.Name .. "/" .. Side,
+        Widgets = {},
     }
-    GB.__index = GB
-
-    function GB:AddToRegistry(Entry)
-        Entry.ParentSection = self.Section
-        table.insert(self.Widgets or {}, Entry)
-    end
 
     Tab.__GB[Side] = GB
 
-    -- Bind methods
     GB.AddToggle = function(self, Options) return CreateToggle(self, Options) end
     GB.AddSlider = function(self, Options) return CreateSlider(self, Options) end
     GB.AddDropdown = function(self, Options) return CreateDropdown(self, Options) end
@@ -329,10 +327,11 @@ function Library:new(Config)
     })
     Pad(TitleLabel, { { "PaddingLeft", UDim.new(0, 10) } })
 
-    local ExitBtn = Create("ImageLabel", {
+    local ExitBtn = Create("ImageButton", {
         Name = "ExitBtn",
         BorderSizePixel = 0,
         BackgroundTransparency = 1,
+        AutoButtonColor = false,
         Image = "rbxassetid://132261474823036",
         Size = UDim2.new(0, 30, 0, 30),
         Position = UDim2.new(1, -30, 0, 0),
@@ -423,11 +422,9 @@ function Library:new(Config)
         end
     end)
 
-    ExitBtn.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Main.Visible = not Main.Visible
-            Library.IsOpen = Main.Visible
-        end
+    ExitBtn.MouseButton1Click:Connect(function()
+        Main.Visible = not Main.Visible
+        Library.IsOpen = Main.Visible
     end)
 
     Self.Main = Main
@@ -436,7 +433,6 @@ function Library:new(Config)
     Self.ButtonHolder = ButtonHolder
     Self.NavLayout = NavLayout
     Self.Keybind = Keybind
-    Self.__GB = {}
 
     function Self:SelectTab(Tab)
         if Self.ActiveTab == Tab then return end
@@ -462,7 +458,7 @@ function Library:new(Config)
     end
 
     function Self:CreateTab(Name)
-        local TabBtn = Create("TextLabel", {
+        local TabBtn = Create("TextButton", {
             Name = "Tab_" .. Name,
             BorderSizePixel = 0,
             TextSize = 14,
@@ -471,6 +467,7 @@ function Library:new(Config)
             TextColor3 = Library.Scheme.TextDim,
             Size = UDim2.new(0, 100, 1, 0),
             AutomaticSize = Enum.AutomaticSize.X,
+            AutoButtonColor = false,
             Text = Name,
             Parent = ButtonHolder,
         })
@@ -532,9 +529,7 @@ function Library:new(Config)
     return Self
 end
 
--- ============ Widgets ============
-
-function CreateToggle(GB, Options)
+CreateToggle = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Toggle"
     local Default = Options.Default or false
@@ -551,7 +546,7 @@ function CreateToggle(GB, Options)
     Stroke(Frame, Library.Scheme.Outline, 1)
     Corner(Frame, 4)
 
-    local TitleLbl = Create("TextLabel", {
+    Create("TextLabel", {
         Size = UDim2.new(1, -40, 1, 0),
         Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
@@ -574,7 +569,8 @@ function CreateToggle(GB, Options)
     Corner(CheckHolder, 3)
 
     local State = Default
-    local Entry = {
+    local Entry
+    Entry = {
         Id = Id,
         Type = "Toggle",
         Value = State,
@@ -583,17 +579,14 @@ function CreateToggle(GB, Options)
             State = V and true or false
             CheckHolder.BackgroundColor3 = State and Library.Scheme.Accent or Library.Scheme.SliderBack
             CheckHolder.UIStroke.Color = State and Library.Scheme.Accent or Library.Scheme.Outline
+            Entry.Value = State
             if Callback then task.spawn(Callback, State) end
         end,
     }
 
     Frame.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            State = not State
-            CheckHolder.BackgroundColor3 = State and Library.Scheme.Accent or Library.Scheme.SliderBack
-            CheckHolder.UIStroke.Color = State and Library.Scheme.Accent or Library.Scheme.Outline
-            Entry.Value = State
-            if Callback then task.spawn(Callback, State) end
+            Entry.SetValue(Entry, not State)
         end
     end)
 
@@ -605,15 +598,16 @@ function CreateToggle(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
-    local Api = {}
-    Api.Set = function(_, V) Entry.SetValue(Entry, V) end
-    Api.Get = function() return State end
-    return Api
+    return {
+        Set = function(_, V) Entry.SetValue(Entry, V) end,
+        Get = function() return State end,
+    }
 end
 
-function CreateSlider(GB, Options)
+CreateSlider = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Slider"
     local Min = Options.Min or 0
@@ -633,7 +627,7 @@ function CreateSlider(GB, Options)
     Stroke(Frame, Library.Scheme.Outline, 1)
     Corner(Frame, 4)
 
-    local TitleLbl = Create("TextLabel", {
+    Create("TextLabel", {
         Size = UDim2.new(0.7, 0, 0, 20),
         Position = UDim2.new(0, 12, 0, 4),
         BackgroundTransparency = 1,
@@ -675,6 +669,7 @@ function CreateSlider(GB, Options)
     Corner(Fill, 3)
 
     local Value = Default
+    local Entry
     local function Apply()
         local Alpha = (Max > Min) and ((Value - Min) / (Max - Min)) or 0
         Alpha = math.clamp(Alpha, 0, 1)
@@ -683,7 +678,7 @@ function CreateSlider(GB, Options)
     end
     Apply()
 
-    local Entry = {
+    Entry = {
         Id = Id,
         Type = "Slider",
         Value = Value,
@@ -740,6 +735,7 @@ function CreateSlider(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {
@@ -748,7 +744,7 @@ function CreateSlider(GB, Options)
     }
 end
 
-function CreateDropdown(GB, Options)
+CreateDropdown = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Dropdown"
     local Values = Options.Values or {}
@@ -857,7 +853,12 @@ function CreateDropdown(GB, Options)
             SortOrder = Enum.SortOrder.LayoutOrder,
             Parent = ListFrame,
         })
-        Pad(ListFrame, { { "PaddingTop", UDim.new(0, 4) }, { "PaddingBottom", UDim.new(0, 4) }, { "PaddingLeft", UDim.new(0, 4) }, { "PaddingRight", UDim.new(0, 4) } })
+        Pad(ListFrame, {
+            { "PaddingTop", UDim.new(0, 4) },
+            { "PaddingBottom", UDim.new(0, 4) },
+            { "PaddingLeft", UDim.new(0, 4) },
+            { "PaddingRight", UDim.new(0, 4) },
+        })
 
         for _, Value in ipairs(Values) do
             local IsActive = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
@@ -893,7 +894,8 @@ function CreateDropdown(GB, Options)
                 end
             end)
             Item.MouseEnter:Connect(function()
-                if not (Multi and type(Selected) == "table" and Selected[Value]) and Value ~= Selected then
+                local active = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
+                if not active then
                     Item.BackgroundColor3 = Library.Scheme.ElementHover
                 end
             end)
@@ -912,6 +914,7 @@ function CreateDropdown(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {
@@ -924,7 +927,7 @@ function CreateDropdown(GB, Options)
     }
 end
 
-function CreateButton(GB, Options)
+CreateButton = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Button"
     local Func = Options.Func or Options.Callback
@@ -940,7 +943,7 @@ function CreateButton(GB, Options)
     Stroke(Frame, Library.Scheme.Outline, 1)
     Corner(Frame, 4)
 
-    local Lbl = Create("TextLabel", {
+    Create("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = Text,
@@ -955,7 +958,9 @@ function CreateButton(GB, Options)
             Frame.BackgroundColor3 = Library.Scheme.Accent
             if Func then task.spawn(Func) end
             task.delay(0.15, function()
-                TweenService:Create(Frame, TweenInfo.new(0.2), { BackgroundColor3 = Library.Scheme.Element }):Play()
+                if Frame.Parent then
+                    TweenService:Create(Frame, TweenInfo.new(0.2), { BackgroundColor3 = Library.Scheme.Element }):Play()
+                end
             end)
         end
     end)
@@ -968,12 +973,13 @@ function CreateButton(GB, Options)
 
     local Entry = { Id = Id, Type = "Button", Frame = Frame }
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {}
 end
 
-function CreateLabel(GB, Options)
+CreateLabel = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or ""
     local Frame = Create("Frame", {
@@ -999,7 +1005,7 @@ function CreateLabel(GB, Options)
     return {}
 end
 
-function CreateInfo(GB, Options)
+CreateInfo = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or ""
     local Frame = Create("Frame", {
@@ -1025,7 +1031,7 @@ function CreateInfo(GB, Options)
     return {}
 end
 
-function CreateWarning(GB, Options)
+CreateWarning = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or ""
     local Frame = Create("Frame", {
@@ -1051,7 +1057,7 @@ function CreateWarning(GB, Options)
     return {}
 end
 
-function CreateColorPicker(GB, Options)
+CreateColorPicker = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or Options.Title or "Color"
     local Default = Options.Default or Color3.new(1, 1, 1)
@@ -1131,12 +1137,17 @@ function CreateColorPicker(GB, Options)
         })
         Stroke(ListFrame, Library.Scheme.Outline, 1)
         Corner(ListFrame, 4)
-        local Grid = Create("UIGridLayout", {
+        Create("UIGridLayout", {
             CellSize = UDim2.new(0, 24, 0, 24),
             CellPadding = UDim2.new(0, 4, 0, 4),
             Parent = ListFrame,
         })
-        Pad(ListFrame, { { "PaddingTop", UDim.new(0, 4) }, { "PaddingLeft", UDim.new(0, 4) }, { "PaddingRight", UDim.new(0, 4) }, { "PaddingBottom", UDim.new(0, 4) } })
+        Pad(ListFrame, {
+            { "PaddingTop", UDim.new(0, 4) },
+            { "PaddingLeft", UDim.new(0, 4) },
+            { "PaddingRight", UDim.new(0, 4) },
+            { "PaddingBottom", UDim.new(0, 4) },
+        })
         for _, C in ipairs(Presets) do
             local Btn = Create("Frame", {
                 BackgroundColor3 = C,
@@ -1161,6 +1172,7 @@ function CreateColorPicker(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {
@@ -1169,7 +1181,7 @@ function CreateColorPicker(GB, Options)
     }
 end
 
-function CreateKeyPicker(GB, Options)
+CreateKeyPicker = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Key"
     local Default = Options.Default or "None"
@@ -1257,6 +1269,7 @@ function CreateKeyPicker(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {
@@ -1265,7 +1278,7 @@ function CreateKeyPicker(GB, Options)
     }
 end
 
-function CreateInput(GB, Options)
+CreateInput = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Input"
     local Default = Options.Default or ""
@@ -1283,7 +1296,7 @@ function CreateInput(GB, Options)
     Stroke(Frame, Library.Scheme.Outline, 1)
     Corner(Frame, 4)
 
-    local Lbl = Create("TextLabel", {
+    Create("TextLabel", {
         Size = UDim2.new(0.4, 0, 1, 0),
         Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
@@ -1331,6 +1344,7 @@ function CreateInput(GB, Options)
     end)
 
     RegisterOption(Id, Entry)
+    table.insert(GB.Widgets, Entry)
     table.insert(GB.Tab.Widgets, Entry)
 
     return {
