@@ -40,7 +40,7 @@ Library.NotifySide = "Right"
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Legacy"
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 
@@ -98,6 +98,7 @@ local function EnsureNotifyHolder()
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 320, 1, -20),
         Position = UDim2.new(1, -330, 0, 10),
+        ZIndex = 100,
         Parent = ScreenGui,
     })
     NotifyLayout = Create("UIListLayout", {
@@ -122,6 +123,7 @@ function Library:Notify(Data)
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 52),
+        ZIndex = 101,
         Parent = NotifyHolder,
     })
     Corner(Frame, 6)
@@ -131,6 +133,7 @@ function Library:Notify(Data)
         Size = UDim2.new(0, 3, 1, 0),
         BackgroundColor3 = Library.Scheme.Accent,
         BorderSizePixel = 0,
+        ZIndex = 102,
         Parent = Frame,
     })
     Corner(Accent, 2)
@@ -144,6 +147,7 @@ function Library:Notify(Data)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 102,
         Parent = Frame,
     })
 
@@ -156,6 +160,7 @@ function Library:Notify(Data)
         FontFace = FontFace,
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 102,
         Parent = Frame,
     })
 
@@ -201,6 +206,7 @@ local function CreateGroupBox(Tab, Name, Side)
         BorderSizePixel = 0,
         Size = UDim2.new(0.5, -8, 1, -8),
         Position = IsLeft and UDim2.new(0, 4, 0, 4) or UDim2.new(0.5, 4, 0, 4),
+        ZIndex = 2,
         Parent = Tab.Frame,
     })
 
@@ -214,6 +220,7 @@ local function CreateGroupBox(Tab, Name, Side)
         FontFace = FontFace,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 3,
         Parent = GBFrame,
     })
     Pad(Header, { { "PaddingLeft", UDim.new(0, 10) } })
@@ -229,6 +236,8 @@ local function CreateGroupBox(Tab, Name, Side)
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = Library.Scheme.Outline,
         ScrollingDirection = Enum.ScrollingDirection.Y,
+        ClipsDescendants = false,
+        ZIndex = 3,
         Parent = GBFrame,
     })
     Create("UIListLayout", {
@@ -291,6 +300,7 @@ function Library:new(Config)
         BackgroundColor3 = Library.Scheme.Background,
         Size = Size,
         Position = UDim2.new(0.5, -Size.X.Offset / 2, 0.5, -Size.Y.Offset / 2),
+        ZIndex = 1,
         Parent = ScreenGui,
     })
     Stroke(Main, Library.Scheme.Outline, 2)
@@ -300,6 +310,7 @@ function Library:new(Config)
         BorderSizePixel = 0,
         BackgroundColor3 = Library.Scheme.TopBar,
         Size = UDim2.new(1, 0, 0, 30),
+        ZIndex = 2,
         Parent = Main,
     })
     Stroke(TopBar, Library.Scheme.Outline, 2)
@@ -310,6 +321,7 @@ function Library:new(Config)
         BackgroundColor3 = Library.Scheme.TopBarExt,
         Size = UDim2.new(1, 0, 0.5, 0),
         Position = UDim2.new(0, 0, 1, 0),
+        ZIndex = 3,
         Parent = TopBar,
     })
 
@@ -323,6 +335,7 @@ function Library:new(Config)
         TextColor3 = Library.Scheme.Accent,
         Size = UDim2.new(0.7, 0, 1, 0),
         Text = Title,
+        ZIndex = 4,
         Parent = TopBar,
     })
     Pad(TitleLabel, { { "PaddingLeft", UDim.new(0, 10) } })
@@ -335,6 +348,7 @@ function Library:new(Config)
         Image = "rbxassetid://132261474823036",
         Size = UDim2.new(0, 30, 0, 30),
         Position = UDim2.new(1, -30, 0, 0),
+        ZIndex = 4,
         Parent = TopBar,
     })
 
@@ -345,6 +359,7 @@ function Library:new(Config)
         ClipsDescendants = true,
         Size = UDim2.new(1, 0, 0, 32),
         Position = UDim2.new(0, 0, 0, 30),
+        ZIndex = 2,
         Parent = Main,
     })
     Stroke(Navigation, Library.Scheme.Outline, 1)
@@ -362,6 +377,7 @@ function Library:new(Config)
         ScrollBarImageTransparency = 0.3,
         ScrollingDirection = Enum.ScrollingDirection.X,
         ElasticBehavior = Enum.ElasticBehavior.Never,
+        ZIndex = 3,
         Parent = Navigation,
     })
     local NavLayout = Create("UIListLayout", {
@@ -384,6 +400,7 @@ function Library:new(Config)
         BackgroundColor3 = Library.Scheme.Content,
         Size = UDim2.new(1, -12, 1, -78),
         Position = UDim2.new(0, 6, 0, 66),
+        ZIndex = 2,
         Parent = Main,
     })
     Stroke(ContentContainer, Library.Scheme.Outline, 1)
@@ -469,6 +486,7 @@ function Library:new(Config)
             AutomaticSize = Enum.AutomaticSize.X,
             AutoButtonColor = false,
             Text = Name,
+            ZIndex = 4,
             Parent = ButtonHolder,
         })
         Corner(TabBtn, 4)
@@ -488,7 +506,9 @@ function Library:new(Config)
             ScrollBarImageColor3 = Library.Scheme.Outline,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y,
+            ClipsDescendants = false,
             Visible = false,
+            ZIndex = 2,
             Parent = ContentContainer,
         })
 
@@ -541,6 +561,7 @@ CreateToggle = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 40),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -555,6 +576,7 @@ CreateToggle = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -563,6 +585,7 @@ CreateToggle = function(GB, Options)
         Position = UDim2.new(1, -28, 0.5, -10),
         BackgroundColor3 = Default and Library.Scheme.Accent or Library.Scheme.SliderBack,
         BorderSizePixel = 0,
+        ZIndex = 5,
         Parent = Frame,
     })
     Stroke(CheckHolder, Default and Library.Scheme.Accent or Library.Scheme.Outline, 1)
@@ -622,6 +645,7 @@ CreateSlider = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 44),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -636,6 +660,7 @@ CreateSlider = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -648,6 +673,7 @@ CreateSlider = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Right,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -656,6 +682,7 @@ CreateSlider = function(GB, Options)
         Position = UDim2.new(0, 12, 0, 28),
         BackgroundColor3 = Library.Scheme.SliderBack,
         BorderSizePixel = 0,
+        ZIndex = 5,
         Parent = Frame,
     })
     Corner(Track, 3)
@@ -664,6 +691,7 @@ CreateSlider = function(GB, Options)
         Size = UDim2.new(0, 0, 1, 0),
         BackgroundColor3 = Library.Scheme.Accent,
         BorderSizePixel = 0,
+        ZIndex = 6,
         Parent = Track,
     })
     Corner(Fill, 3)
@@ -759,6 +787,7 @@ CreateDropdown = function(GB, Options)
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 34),
         ClipsDescendants = false,
+        ZIndex = 10,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -773,6 +802,7 @@ CreateDropdown = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 11,
         Parent = Frame,
     })
 
@@ -784,6 +814,7 @@ CreateDropdown = function(GB, Options)
         TextColor3 = Library.Scheme.TextDim,
         FontFace = FontFace,
         TextSize = 14,
+        ZIndex = 11,
         Parent = Frame,
     })
 
@@ -843,7 +874,8 @@ CreateDropdown = function(GB, Options)
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollBarThickness = 4,
             ScrollBarImageColor3 = Library.Scheme.Outline,
-            ZIndex = 10,
+            ClipsDescendants = false,
+            ZIndex = 50,
             Parent = Frame,
         })
         Stroke(ListFrame, Library.Scheme.Outline, 1)
@@ -871,7 +903,7 @@ CreateDropdown = function(GB, Options)
                 FontFace = FontFace,
                 TextSize = 13,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 11,
+                ZIndex = 51,
                 Parent = ListFrame,
             })
             Corner(Item, 3)
@@ -938,6 +970,7 @@ CreateButton = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 32),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -950,6 +983,7 @@ CreateButton = function(GB, Options)
         TextColor3 = Library.Scheme.Text,
         FontFace = FontFace,
         TextSize = 14,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -987,6 +1021,7 @@ CreateLabel = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Content,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 26),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.OutlineDim, 1)
@@ -1000,6 +1035,7 @@ CreateLabel = function(GB, Options)
         FontFace = FontFace,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
     return {}
@@ -1013,6 +1049,7 @@ CreateInfo = function(GB, Options)
         BackgroundColor3 = Library.Scheme.InfoBg,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 26),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.InfoBorder, 1)
@@ -1026,6 +1063,7 @@ CreateInfo = function(GB, Options)
         FontFace = FontFace,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
     return {}
@@ -1039,6 +1077,7 @@ CreateWarning = function(GB, Options)
         BackgroundColor3 = Library.Scheme.WarningBg,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 26),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.WarningBorder, 1)
@@ -1052,6 +1091,7 @@ CreateWarning = function(GB, Options)
         FontFace = FontFace,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
     return {}
@@ -1069,6 +1109,8 @@ CreateColorPicker = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 34),
+        ClipsDescendants = false,
+        ZIndex = 10,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -1083,6 +1125,7 @@ CreateColorPicker = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 11,
         Parent = Frame,
     })
 
@@ -1091,6 +1134,7 @@ CreateColorPicker = function(GB, Options)
         Position = UDim2.new(1, -32, 0.5, -10),
         BackgroundColor3 = Default,
         BorderSizePixel = 0,
+        ZIndex = 11,
         Parent = Frame,
     })
     Stroke(Swatch, Library.Scheme.Outline, 1)
@@ -1129,10 +1173,13 @@ CreateColorPicker = function(GB, Options)
     end
     local function OpenList()
         ListFrame = Create("Frame", {
+            Name = "ColorPresets",
             BackgroundColor3 = Library.Scheme.TopBar,
+            BorderSizePixel = 0,
             Size = UDim2.new(0, 160, 0, 60),
             Position = UDim2.new(1, -160, 1, 4),
-            ZIndex = 10,
+            ClipsDescendants = false,
+            ZIndex = 50,
             Parent = Frame,
         })
         Stroke(ListFrame, Library.Scheme.Outline, 1)
@@ -1152,7 +1199,7 @@ CreateColorPicker = function(GB, Options)
             local Btn = Create("Frame", {
                 BackgroundColor3 = C,
                 BorderSizePixel = 0,
-                ZIndex = 11,
+                ZIndex = 51,
                 Parent = ListFrame,
             })
             Stroke(Btn, Library.Scheme.Outline, 1)
@@ -1193,6 +1240,7 @@ CreateKeyPicker = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 34),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -1207,6 +1255,7 @@ CreateKeyPicker = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -1220,6 +1269,7 @@ CreateKeyPicker = function(GB, Options)
         TextColor3 = Library.Scheme.Text,
         FontFace = FontFace,
         TextSize = 13,
+        ZIndex = 5,
         Parent = Frame,
     })
     Stroke(KeyLbl, Library.Scheme.Outline, 1)
@@ -1291,6 +1341,7 @@ CreateInput = function(GB, Options)
         BackgroundColor3 = Library.Scheme.Element,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 34),
+        ZIndex = 4,
         Parent = GB.Scroll,
     })
     Stroke(Frame, Library.Scheme.Outline, 1)
@@ -1305,6 +1356,7 @@ CreateInput = function(GB, Options)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5,
         Parent = Frame,
     })
 
@@ -1320,6 +1372,7 @@ CreateInput = function(GB, Options)
         FontFace = FontFace,
         TextSize = 13,
         ClearTextOnFocus = false,
+        ZIndex = 5,
         Parent = Frame,
     })
     Stroke(Box, Library.Scheme.Outline, 1)
