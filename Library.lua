@@ -423,9 +423,11 @@ function Library:new(Config)
         end
     end)
 
-    ExitBtn.MouseButton1Click:Connect(function()
-        Main.Visible = not Main.Visible
-        Library.IsOpen = Main.Visible
+    ExitBtn.InputBegan:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+            Main.Visible = not Main.Visible
+            Library.IsOpen = Main.Visible
+        end
     end)
 
     Self.Main = Main
