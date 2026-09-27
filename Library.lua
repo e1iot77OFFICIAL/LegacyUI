@@ -55,6 +55,16 @@ do
     ScreenGui.Parent = parent
 end
 
+local Overlay = Instance.new("Frame")
+Overlay.Name = "Overlay"
+Overlay.BackgroundTransparency = 1
+Overlay.Size = UDim2.new(1, 0, 1, 0)
+Overlay.Position = UDim2.new(0, 0, 0, 0)
+Overlay.ZIndex = 500
+Overlay.ClipsDescendants = false
+Overlay.Active = false
+Overlay.Parent = ScreenGui
+
 local function Create(Class, Props)
     local Inst = Instance.new(Class)
     for K, V in pairs(Props) do
@@ -98,7 +108,7 @@ local function EnsureNotifyHolder()
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 320, 1, -20),
         Position = UDim2.new(1, -330, 0, 10),
-        ZIndex = 100,
+        ZIndex = 1000,
         Parent = ScreenGui,
     })
     NotifyLayout = Create("UIListLayout", {
@@ -123,7 +133,7 @@ function Library:Notify(Data)
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 52),
-        ZIndex = 101,
+        ZIndex = 1001,
         Parent = NotifyHolder,
     })
     Corner(Frame, 6)
@@ -133,7 +143,7 @@ function Library:Notify(Data)
         Size = UDim2.new(0, 3, 1, 0),
         BackgroundColor3 = Library.Scheme.Accent,
         BorderSizePixel = 0,
-        ZIndex = 102,
+        ZIndex = 1002,
         Parent = Frame,
     })
     Corner(Accent, 2)
@@ -147,7 +157,7 @@ function Library:Notify(Data)
         FontFace = FontFace,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 102,
+        ZIndex = 1002,
         Parent = Frame,
     })
 
@@ -160,7 +170,7 @@ function Library:Notify(Data)
         FontFace = FontFace,
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 102,
+        ZIndex = 1002,
         Parent = Frame,
     })
 
@@ -236,7 +246,7 @@ local function CreateGroupBox(Tab, Name, Side)
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = Library.Scheme.Outline,
         ScrollingDirection = Enum.ScrollingDirection.Y,
-        ClipsDescendants = false,
+        ClipsDescendants = true,
         ZIndex = 3,
         Parent = GBFrame,
     })
@@ -506,7 +516,7 @@ function Library:new(Config)
             ScrollBarImageColor3 = Library.Scheme.Outline,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y,
-            ClipsDescendants = false,
+            ClipsDescendants = true,
             Visible = false,
             ZIndex = 2,
             Parent = ContentContainer,
@@ -772,6 +782,34 @@ CreateSlider = function(GB, Options)
     }
 end
 
+local function MakeOverlayList()
+    local ListFrame = Create("ScrollingFrame", {
+        Name = "OverlayList",
+        BackgroundColor3 = Library.Scheme.TopBar,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Library.Scheme.Outline,
+        ZIndex = 501,
+        Parent = Overlay,
+    })
+    Stroke(ListFrame, Library.Scheme.Outline, 1)
+    Corner(ListFrame, 4)
+    Create("UIListLayout", {
+        Padding = UDim.new(0, 2),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Parent = ListFrame,
+    })
+    Pad(ListFrame, {
+        { "PaddingTop", UDim.new(0, 4) },
+        { "PaddingBottom", UDim.new(0, 4) },
+        { "PaddingLeft", UDim.new(0, 4) },
+        { "PaddingRight", UDim.new(0, 4) },
+    })
+    return ListFrame
+end
+
 CreateDropdown = function(GB, Options)
     Options = Options or {}
     local Text = Options.Text or "Dropdown"
@@ -853,44 +891,38 @@ CreateDropdown = function(GB, Options)
 
     local ListOpen = false
     local ListFrame
+    local AnchorConn
+
+    local function UpdateAnchor()
+        if not ListFrame or not ListFrame.Parent then return end
+        if not Frame.Parent then
+            if ListFrame then ListFrame:Destroy() ListFrame = nil end
+            ListOpen = false
+            return
+        end
+        local Abs = Frame.AbsolutePosition
+        local Size = Frame.AbsoluteSize
+        ListFrame.Position = UDim2.fromOffset(Abs.X, Abs.Y + Size.Y + 4)
+        ListFrame.Size = UDim2.new(0, Size.X, 0, math.min(#Values * 20 + 8, 150))
+    end
 
     local function CloseList()
         if ListFrame then
             ListFrame:Destroy()
             ListFrame = nil
         end
+        if AnchorConn then
+            AnchorConn:Disconnect()
+            AnchorConn = nil
+        end
         ListOpen = false
         TweenService:Create(Arrow, TweenInfo.new(0.15), { Rotation = 0 }):Play()
     end
 
     local function OpenList()
-        ListFrame = Create("ScrollingFrame", {
-            Name = "OptionHolder",
-            BackgroundColor3 = Library.Scheme.TopBar,
-            BorderSizePixel = 0,
-            Size = UDim2.new(1, 0, 0, math.min(#Values * 20 + 8, 150)),
-            Position = UDim2.new(0, 0, 1, 4),
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            ScrollBarThickness = 4,
-            ScrollBarImageColor3 = Library.Scheme.Outline,
-            ClipsDescendants = false,
-            ZIndex = 50,
-            Parent = Frame,
-        })
-        Stroke(ListFrame, Library.Scheme.Outline, 1)
-        Corner(ListFrame, 4)
-        Create("UIListLayout", {
-            Padding = UDim.new(0, 2),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Parent = ListFrame,
-        })
-        Pad(ListFrame, {
-            { "PaddingTop", UDim.new(0, 4) },
-            { "PaddingBottom", UDim.new(0, 4) },
-            { "PaddingLeft", UDim.new(0, 4) },
-            { "PaddingRight", UDim.new(0, 4) },
-        })
+        if ListFrame then return end
+        ListFrame = MakeOverlayList()
+        ListFrame.Size = UDim2.new(0, Frame.AbsoluteSize.X, 0, math.min(#Values * 20 + 8, 150))
 
         for _, Value in ipairs(Values) do
             local IsActive = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
@@ -903,7 +935,7 @@ CreateDropdown = function(GB, Options)
                 FontFace = FontFace,
                 TextSize = 13,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 51,
+                ZIndex = 502,
                 Parent = ListFrame,
             })
             Corner(Item, 3)
@@ -936,6 +968,9 @@ CreateDropdown = function(GB, Options)
                 Item.BackgroundColor3 = active and Library.Scheme.Accent or Library.Scheme.DropdownItem
             end)
         end
+
+        UpdateAnchor()
+        AnchorConn = RunService.RenderStepped:Connect(UpdateAnchor)
         ListOpen = true
         TweenService:Create(Arrow, TweenInfo.new(0.15), { Rotation = 180 }):Play()
     end
@@ -943,6 +978,22 @@ CreateDropdown = function(GB, Options)
     Frame.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
         if ListOpen then CloseList() else OpenList() end
+    end)
+
+    UserInputService.InputBegan:Connect(function(Input, GPE)
+        if GPE then return end
+        if not ListOpen then return end
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local Pos = Input.Position
+        local Abs = Frame.AbsolutePosition
+        local Size = Frame.AbsoluteSize
+        if Pos.X >= Abs.X and Pos.X <= Abs.X + Size.X and Pos.Y >= Abs.Y and Pos.Y <= Abs.Y + Size.Y then return end
+        if ListFrame then
+            local LAbs = ListFrame.AbsolutePosition
+            local LSize = ListFrame.AbsoluteSize
+            if Pos.X >= LAbs.X and Pos.X <= LAbs.X + LSize.X and Pos.Y >= LAbs.Y and Pos.Y <= LAbs.Y + LSize.Y then return end
+        end
+        CloseList()
     end)
 
     RegisterOption(Id, Entry)
@@ -1167,20 +1218,42 @@ CreateColorPicker = function(GB, Options)
 
     local ListOpen = false
     local ListFrame
+    local AnchorConn
+
+    local function UpdateAnchor()
+        if not ListFrame or not ListFrame.Parent then return end
+        if not Frame.Parent then
+            if ListFrame then ListFrame:Destroy() ListFrame = nil end
+            ListOpen = false
+            return
+        end
+        local Abs = Frame.AbsolutePosition
+        local Size = Frame.AbsoluteSize
+        local ListW = 160
+        ListFrame.Position = UDim2.fromOffset(Abs.X + Size.X - ListW, Abs.Y + Size.Y + 4)
+    end
+
     local function CloseList()
-        if ListFrame then ListFrame:Destroy() ListFrame = nil end
+        if ListFrame then
+            ListFrame:Destroy()
+            ListFrame = nil
+        end
+        if AnchorConn then
+            AnchorConn:Disconnect()
+            AnchorConn = nil
+        end
         ListOpen = false
     end
+
     local function OpenList()
+        if ListFrame then return end
         ListFrame = Create("Frame", {
-            Name = "ColorPresets",
+            Name = "OverlayColor",
             BackgroundColor3 = Library.Scheme.TopBar,
             BorderSizePixel = 0,
             Size = UDim2.new(0, 160, 0, 60),
-            Position = UDim2.new(1, -160, 1, 4),
-            ClipsDescendants = false,
-            ZIndex = 50,
-            Parent = Frame,
+            ZIndex = 501,
+            Parent = Overlay,
         })
         Stroke(ListFrame, Library.Scheme.Outline, 1)
         Corner(ListFrame, 4)
@@ -1199,7 +1272,7 @@ CreateColorPicker = function(GB, Options)
             local Btn = Create("Frame", {
                 BackgroundColor3 = C,
                 BorderSizePixel = 0,
-                ZIndex = 51,
+                ZIndex = 502,
                 Parent = ListFrame,
             })
             Stroke(Btn, Library.Scheme.Outline, 1)
@@ -1210,12 +1283,30 @@ CreateColorPicker = function(GB, Options)
                 CloseList()
             end)
         end
+        UpdateAnchor()
+        AnchorConn = RunService.RenderStepped:Connect(UpdateAnchor)
         ListOpen = true
     end
 
     Frame.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
         if ListOpen then CloseList() else OpenList() end
+    end)
+
+    UserInputService.InputBegan:Connect(function(Input, GPE)
+        if GPE then return end
+        if not ListOpen then return end
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local Pos = Input.Position
+        local Abs = Frame.AbsolutePosition
+        local Size = Frame.AbsoluteSize
+        if Pos.X >= Abs.X and Pos.X <= Abs.X + Size.X and Pos.Y >= Abs.Y and Pos.Y <= Abs.Y + Size.Y then return end
+        if ListFrame then
+            local LAbs = ListFrame.AbsolutePosition
+            local LSize = ListFrame.AbsoluteSize
+            if Pos.X >= LAbs.X and Pos.X <= LAbs.X + LSize.X and Pos.Y >= LAbs.Y and Pos.Y <= LAbs.Y + LSize.Y then return end
+        end
+        CloseList()
     end)
 
     RegisterOption(Id, Entry)
