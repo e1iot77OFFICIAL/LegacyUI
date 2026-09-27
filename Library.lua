@@ -1,1500 +1,1100 @@
-local Players           = game:GetService("Players")
-local RunService        = game:GetService("RunService")
-local UserInputService  = game:GetService("UserInputService")
-local TweenService      = game:GetService("TweenService")
-local LocalPlayer       = Players.LocalPlayer
+local plrs = game:GetService("Players")
+local rs = game:GetService("RunService")
+local uis = game:GetService("UserInputService")
+local tw = game:GetService("TweenService")
+local lp = plrs.LocalPlayer
 
-local Library = {}
-Library.__index = Library
+local lib = {}
+lib.__index = lib
 
-Library.Scheme = {
-    Background = Color3.fromRGB(21, 19, 31),
-    TopBar = Color3.fromRGB(11, 11, 11),
-    TopBarExt = Color3.fromRGB(26, 26, 26),
-    Content = Color3.fromRGB(27, 23, 41),
-    Element = Color3.fromRGB(37, 33, 53),
-    ElementHover = Color3.fromRGB(45, 40, 65),
-    Accent = Color3.fromRGB(156, 90, 255),
-    Outline = Color3.fromRGB(61, 55, 89),
-    OutlineDim = Color3.fromRGB(51, 45, 75),
-    Text = Color3.fromRGB(241, 241, 251),
-    TextDim = Color3.fromRGB(161, 161, 181),
-    SliderBack = Color3.fromRGB(29, 25, 43),
-    DropdownItem = Color3.fromRGB(23, 21, 33),
-    InfoBg = Color3.fromRGB(21, 27, 41),
-    InfoBorder = Color3.fromRGB(51, 91, 141),
-    InfoText = Color3.fromRGB(91, 171, 255),
-    WarningBg = Color3.fromRGB(37, 21, 27),
-    WarningBorder = Color3.fromRGB(121, 41, 51),
-    WarningText = Color3.fromRGB(255, 81, 81),
+lib.Scheme = {
+    Background = Color3.fromRGB(21,19,31),
+    TopBar = Color3.fromRGB(11,11,11),
+    TopBarExt = Color3.fromRGB(26,26,26),
+    Content = Color3.fromRGB(27,23,41),
+    Element = Color3.fromRGB(37,33,53),
+    ElementHover = Color3.fromRGB(45,40,65),
+    Accent = Color3.fromRGB(156,90,255),
+    Outline = Color3.fromRGB(61,55,89),
+    OutlineDim = Color3.fromRGB(51,45,75),
+    Text = Color3.fromRGB(241,241,251),
+    TextDim = Color3.fromRGB(161,161,181),
+    SliderBack = Color3.fromRGB(29,25,43),
+    DropdownItem = Color3.fromRGB(23,21,33),
+    InfoBg = Color3.fromRGB(21,27,41),
+    InfoBorder = Color3.fromRGB(51,91,141),
+    InfoText = Color3.fromRGB(91,171,255),
+    WarningBg = Color3.fromRGB(37,21,27),
+    WarningBorder = Color3.fromRGB(121,41,51),
+    WarningText = Color3.fromRGB(255,81,81),
 }
 
-local FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular)
-local TitleFont = Font.new("rbxasset://fonts/families/Michroma.json", Enum.FontWeight.Regular)
+local font = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular)
+local titleFont = Font.new("rbxasset://fonts/families/Michroma.json", Enum.FontWeight.Regular)
 
-Library.IsOpen = true
-Library.Options = {}
-Library.Toggles = {}
-Library.Tabs = {}
-Library.NotifySide = "Right"
+lib.IsOpen = true
+lib.Options = {}
+lib.Toggles = {}
+lib.Tabs = {}
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Legacy"
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
+local gui = Instance.new("ScreenGui")
+gui.Name = "Legacy"
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
 
-do
-    local parent
-    if gethui then
-        parent = gethui()
-    else
-        if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
-        parent = game:GetService("CoreGui")
+if gethui then gui.Parent = gethui()
+else
+    pcall(function() if syn and syn.protect_gui then syn.protect_gui(gui) end end)
+    gui.Parent = game:GetService("CoreGui")
+end
+
+-- overlay for dropdowns/colorpickers so they dont clip
+local overlay = Instance.new("Frame")
+overlay.Name = "Overlay"
+overlay.BackgroundTransparency = 1
+overlay.Size = UDim2.new(1,0,1,0)
+overlay.ZIndex = 500
+overlay.Active = false
+overlay.Parent = gui
+
+local function mk(cls, props)
+    local i = Instance.new(cls)
+    for k,v in pairs(props) do
+        if k ~= "Parent" then i[k] = v end
     end
-    ScreenGui.Parent = parent
+    if props.Parent then i.Parent = props.Parent end
+    return i
 end
 
-local Overlay = Instance.new("Frame")
-Overlay.Name = "Overlay"
-Overlay.BackgroundTransparency = 1
-Overlay.Size = UDim2.new(1, 0, 1, 0)
-Overlay.Position = UDim2.new(0, 0, 0, 0)
-Overlay.ZIndex = 500
-Overlay.ClipsDescendants = false
-Overlay.Active = false
-Overlay.Parent = ScreenGui
-
-local function Create(Class, Props)
-    local Inst = Instance.new(Class)
-    for K, V in pairs(Props) do
-        if K ~= "Parent" then Inst[K] = V end
-    end
-    if Props.Parent then Inst.Parent = Props.Parent end
-    return Inst
+local function corner(x, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or 6)
+    c.Parent = x
+    return c
 end
 
-local function Corner(Inst, Radius)
-    local C = Instance.new("UICorner")
-    C.CornerRadius = UDim.new(0, Radius or 6)
-    C.Parent = Inst
-    return C
+local function stroke(x, col, th)
+    local s = Instance.new("UIStroke")
+    s.Color = col or lib.Scheme.Outline
+    s.Thickness = th or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = x
+    return s
 end
 
-local function Stroke(Inst, Color, Thickness)
-    local S = Instance.new("UIStroke")
-    S.Color = Color or Library.Scheme.Outline
-    S.Thickness = Thickness or 1
-    S.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    S.Parent = Inst
-    return S
+local function pad(x, list)
+    local p = Instance.new("UIPadding")
+    for _,e in ipairs(list) do p[e[1]] = e[2] end
+    p.Parent = x
+    return p
 end
 
-local function Pad(Inst, List)
-    local P = Instance.new("UIPadding")
-    for _, Entry in ipairs(List) do
-        P[Entry[1]] = Entry[2]
-    end
-    P.Parent = Inst
-    return P
-end
-
-local NotifyHolder
-local NotifyLayout
-local function EnsureNotifyHolder()
-    if NotifyHolder then return end
-    NotifyHolder = Create("Frame", {
-        Name = "Notifications",
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 320, 1, -20),
-        Position = UDim2.new(1, -330, 0, 10),
-        ZIndex = 1000,
-        Parent = ScreenGui,
+local nh, nl
+local function ensureNotify()
+    if nh then return end
+    nh = mk("Frame", {
+        Name = "Notifications", BackgroundTransparency = 1,
+        Size = UDim2.new(0, 320, 1, -20), Position = UDim2.new(1,-330,0,10),
+        ZIndex = 1000, Parent = gui,
     })
-    NotifyLayout = Create("UIListLayout", {
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
+    nl = mk("UIListLayout", {
+        Padding = UDim.new(0,6), SortOrder = Enum.SortOrder.LayoutOrder,
         VerticalAlignment = Enum.VerticalAlignment.Top,
         HorizontalAlignment = Enum.HorizontalAlignment.Right,
-        Parent = NotifyHolder,
+        Parent = nh,
     })
 end
 
-function Library:Notify(Data)
-    if type(Data) == "string" then Data = { Title = "Notification", Body = Data } end
-    Data = Data or {}
-    local Title = Data.Title or "Notification"
-    local Body = Data.Body or Data.Description or ""
-    local Time = Data.Time or 4
-    EnsureNotifyHolder()
+function lib:Notify(d)
+    if type(d) == "string" then d = {Title="Notification", Body=d} end
+    d = d or {}
+    local title = d.Title or "Notification"
+    local body = d.Body or d.Description or ""
+    local tm = d.Time or 4
+    ensureNotify()
 
-    local Frame = Create("Frame", {
-        BackgroundColor3 = Library.Scheme.Background,
-        BackgroundTransparency = 0.15,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 52),
-        ZIndex = 1001,
-        Parent = NotifyHolder,
+    local f = mk("Frame", {
+        BackgroundColor3 = lib.Scheme.Background, BackgroundTransparency = 0.15,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,52), ZIndex = 1001, Parent = nh,
     })
-    Corner(Frame, 6)
-    Stroke(Frame, Library.Scheme.Outline, 1)
+    corner(f, 6)
+    stroke(f, lib.Scheme.Outline, 1)
 
-    local Accent = Create("Frame", {
-        Size = UDim2.new(0, 3, 1, 0),
-        BackgroundColor3 = Library.Scheme.Accent,
-        BorderSizePixel = 0,
-        ZIndex = 1002,
-        Parent = Frame,
+    local acc = mk("Frame", {
+        Size = UDim2.new(0,3,1,0), BackgroundColor3 = lib.Scheme.Accent,
+        BorderSizePixel = 0, ZIndex = 1002, Parent = f,
     })
-    Corner(Accent, 2)
+    corner(acc, 2)
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -24, 0, 20),
-        Position = UDim2.new(0, 12, 0, 6),
-        BackgroundTransparency = 1,
-        Text = Title,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 1002,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(1,-24,0,20), Position = UDim2.new(0,12,0,6),
+        BackgroundTransparency = 1, Text = title, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 1002, Parent = f,
+    })
+    mk("TextLabel", {
+        Size = UDim2.new(1,-24,0,18), Position = UDim2.new(0,12,0,26),
+        BackgroundTransparency = 1, Text = body, TextColor3 = lib.Scheme.TextDim,
+        FontFace = font, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 1002, Parent = f,
     })
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -24, 0, 18),
-        Position = UDim2.new(0, 12, 0, 26),
-        BackgroundTransparency = 1,
-        Text = Body,
-        TextColor3 = Library.Scheme.TextDim,
-        FontFace = FontFace,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 1002,
-        Parent = Frame,
-    })
-
-    Frame.Position = UDim2.new(1, 30, 0, 0)
-    TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(0, 0, 0, 0) }):Play()
-
-    task.delay(Time, function()
-        if not Frame.Parent then return end
-        local Out = TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(1, 30, 0, 0) })
-        Out:Play()
-        Out.Completed:Wait()
-        Frame:Destroy()
+    f.Position = UDim2.new(1,30,0,0)
+    tw:Create(f, TweenInfo.new(0.28), {Position = UDim2.new(0,0,0,0)}):Play()
+    task.delay(tm, function()
+        if f.Parent then
+            local t = tw:Create(f, TweenInfo.new(0.28), {Position = UDim2.new(1,30,0,0)})
+            t:Play(); t.Completed:Wait(); f:Destroy()
+        end
     end)
 end
 
-local WidgetIdCounter = 0
-local function NextId()
-    WidgetIdCounter = WidgetIdCounter + 1
-    return WidgetIdCounter
+local wid = 0
+local function nextId()
+    wid = wid + 1
+    return wid
 end
 
-local function RegisterOption(Id, Entry)
-    Library.Options[Id] = Entry
-    if Entry.Type == "Toggle" or Entry.Type == "KeyPicker" or Entry.Type == "Dropdown" or Entry.Type == "ColorPicker" then
-        Library.Toggles[Id] = Entry
+local function reg(id, e)
+    lib.Options[id] = e
+    if e.Type == "Toggle" or e.Type == "KeyPicker" or e.Type == "Dropdown" or e.Type == "ColorPicker" then
+        lib.Toggles[id] = e
     end
 end
 
-local CreateToggle, CreateSlider, CreateDropdown, CreateButton
-local CreateLabel, CreateInfo, CreateWarning, CreateColorPicker
-local CreateKeyPicker, CreateInput
+-- forward decl (из-за порядка)
+local makeToggle, makeSlider, makeDropdown, makeButton
+local makeLabel, makeInfo, makeWarn, makeColor
+local makeKey, makeInput
 
-local function CreateGroupBox(Tab, Name, Side)
-    if Tab.__GB[Side] then
-        if Name then Tab.__GB[Side].Header.Text = Name end
-        return Tab.__GB[Side]
+local function mkGB(tab, name, side)
+    if tab.__GB[side] then
+        if name then tab.__GB[side].Header.Text = name end
+        return tab.__GB[side]
     end
 
-    local IsLeft = (Side == "left")
-    local GBFrame = Create("Frame", {
-        Name = IsLeft and "GbLeft" or "GbRight",
-        BackgroundColor3 = Library.Scheme.Content,
-        BorderSizePixel = 0,
-        Size = UDim2.new(0.5, -8, 1, -8),
-        Position = IsLeft and UDim2.new(0, 4, 0, 4) or UDim2.new(0.5, 4, 0, 4),
-        ZIndex = 2,
-        Parent = Tab.Frame,
+    local left = (side == "left")
+    local fr = mk("Frame", {
+        Name = left and "GbLeft" or "GbRight",
+        BackgroundColor3 = lib.Scheme.Content, BorderSizePixel = 0,
+        Size = UDim2.new(0.5,-8,1,-8),
+        Position = left and UDim2.new(0,4,0,4) or UDim2.new(0.5,4,0,4),
+        ZIndex = 2, Parent = tab.Frame,
     })
 
-    local Header = Create("TextLabel", {
-        Name = "Header",
-        Size = UDim2.new(1, 0, 0, 24),
-        BackgroundColor3 = Library.Scheme.TopBar,
-        BorderSizePixel = 0,
-        Text = Name or "",
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 3,
-        Parent = GBFrame,
+    local h = mk("TextLabel", {
+        Name = "Header", Size = UDim2.new(1,0,0,24),
+        BackgroundColor3 = lib.Scheme.TopBar, BorderSizePixel = 0,
+        Text = name or "", TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = fr,
     })
-    Pad(Header, { { "PaddingLeft", UDim.new(0, 10) } })
+    pad(h, {{"PaddingLeft", UDim.new(0,10)}})
 
-    local Scroll = Create("ScrollingFrame", {
-        Name = "Scroll",
-        Size = UDim2.new(1, 0, 1, -24),
-        Position = UDim2.new(0, 0, 0, 24),
-        BackgroundColor3 = Library.Scheme.Content,
-        BorderSizePixel = 0,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
+    local sc = mk("ScrollingFrame", {
+        Name = "Scroll", Size = UDim2.new(1,0,1,-24),
+        Position = UDim2.new(0,0,0,24),
+        BackgroundColor3 = lib.Scheme.Content, BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0,0,0,0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = Library.Scheme.Outline,
+        ScrollBarThickness = 4, ScrollBarImageColor3 = lib.Scheme.Outline,
         ScrollingDirection = Enum.ScrollingDirection.Y,
-        ClipsDescendants = true,
-        ZIndex = 3,
-        Parent = GBFrame,
+        ClipsDescendants = true, ZIndex = 3, Parent = fr,
     })
-    Create("UIListLayout", {
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = Scroll,
-    })
-    Pad(Scroll, {
-        { "PaddingLeft", UDim.new(0, 6) },
-        { "PaddingRight", UDim.new(0, 6) },
-        { "PaddingTop", UDim.new(0, 6) },
-        { "PaddingBottom", UDim.new(0, 6) },
+    mk("UIListLayout", {Padding = UDim.new(0,6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = sc})
+    pad(sc, {
+        {"PaddingLeft", UDim.new(0,6)}, {"PaddingRight", UDim.new(0,6)},
+        {"PaddingTop", UDim.new(0,6)},  {"PaddingBottom", UDim.new(0,6)},
     })
 
-    local GB = {
-        Frame = GBFrame,
-        Header = Header,
-        Scroll = Scroll,
-        Tab = Tab,
-        Section = Tab.Name .. "/" .. Side,
-        Widgets = {},
-    }
+    local g = {Frame=fr, Header=h, Scroll=sc, Tab=tab, Section=tab.Name.."/"..side, Widgets={}}
+    tab.__GB[side] = g
 
-    Tab.__GB[Side] = GB
+    g.AddToggle = function(s,o) return makeToggle(s,o) end
+    g.AddSlider = function(s,o) return makeSlider(s,o) end
+    g.AddDropdown = function(s,o) return makeDropdown(s,o) end
+    g.AddButton = function(s,o) return makeButton(s,o) end
+    g.AddLabel = function(s,o) return makeLabel(s,o) end
+    g.AddInfo = function(s,o) return makeInfo(s,o) end
+    g.AddWarning = function(s,o) return makeWarn(s,o) end
+    g.AddColorPicker = function(s,o) return makeColor(s,o) end
+    g.AddKeyPicker = function(s,o) return makeKey(s,o) end
+    g.AddInput = function(s,o) return makeInput(s,o) end
 
-    GB.AddToggle = function(self, Options) return CreateToggle(self, Options) end
-    GB.AddSlider = function(self, Options) return CreateSlider(self, Options) end
-    GB.AddDropdown = function(self, Options) return CreateDropdown(self, Options) end
-    GB.AddButton = function(self, Options) return CreateButton(self, Options) end
-    GB.AddLabel = function(self, Options) return CreateLabel(self, Options) end
-    GB.AddInfo = function(self, Options) return CreateInfo(self, Options) end
-    GB.AddWarning = function(self, Options) return CreateWarning(self, Options) end
-    GB.AddColorPicker = function(self, Options) return CreateColorPicker(self, Options) end
-    GB.AddKeyPicker = function(self, Options) return CreateKeyPicker(self, Options) end
-    GB.AddInput = function(self, Options) return CreateInput(self, Options) end
-
-    return GB
+    return g
 end
 
-function Library:new(Config)
-    Config = Config or {}
-    if Config.scheme then
-        for K, V in pairs(Config.scheme) do
-            Library.Scheme[K] = V
-        end
+function lib:new(cfg)
+    cfg = cfg or {}
+    if cfg.scheme then
+        for k,v in pairs(cfg.scheme) do lib.Scheme[k] = v end
     end
 
-    local Self = setmetatable({}, Library)
-    Self.Tabs = {}
-    Self.ActiveTab = nil
-    Self.__GB = {}
+    local self = setmetatable({}, lib)
+    self.Tabs = {}
+    self.ActiveTab = nil
+    self.__GB = {}
 
-    local Title = Config.title or Config.name or "UI Library"
-    local Size = Config.size or UDim2.new(0, 536, 0, 582)
-    local Keybind = Config.keybind or Enum.KeyCode.RightShift
+    local title = cfg.title or cfg.name or "UI"
+    local size = cfg.size or UDim2.new(0,536,0,582)
+    local key = cfg.keybind or Enum.KeyCode.RightShift
 
-    local Main = Create("Frame", {
-        Name = "Main",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Library.Scheme.Background,
-        Size = Size,
-        Position = UDim2.new(0.5, -Size.X.Offset / 2, 0.5, -Size.Y.Offset / 2),
-        ZIndex = 1,
-        Parent = ScreenGui,
+    local main = mk("Frame", {
+        Name = "Main", BorderSizePixel = 0,
+        BackgroundColor3 = lib.Scheme.Background, Size = size,
+        Position = UDim2.new(0.5, -size.X.Offset/2, 0.5, -size.Y.Offset/2),
+        ZIndex = 1, Parent = gui,
     })
-    Stroke(Main, Library.Scheme.Outline, 2)
+    stroke(main, lib.Scheme.Outline, 2)
 
-    local TopBar = Create("Frame", {
-        Name = "TopBar",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Library.Scheme.TopBar,
-        Size = UDim2.new(1, 0, 0, 30),
-        ZIndex = 2,
-        Parent = Main,
+    local top = mk("Frame", {
+        Name = "TopBar", BorderSizePixel = 0,
+        BackgroundColor3 = lib.Scheme.TopBar, Size = UDim2.new(1,0,0,30),
+        ZIndex = 2, Parent = main,
     })
-    Stroke(TopBar, Library.Scheme.Outline, 2)
+    stroke(top, lib.Scheme.Outline, 2)
 
-    Create("Frame", {
-        Name = "Extension",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Library.Scheme.TopBarExt,
-        Size = UDim2.new(1, 0, 0.5, 0),
-        Position = UDim2.new(0, 0, 1, 0),
-        ZIndex = 3,
-        Parent = TopBar,
+    mk("Frame", {
+        Name = "Extension", BorderSizePixel = 0,
+        BackgroundColor3 = lib.Scheme.TopBarExt,
+        Size = UDim2.new(1,0,0.5,0), Position = UDim2.new(0,0,1,0),
+        ZIndex = 3, Parent = top,
     })
 
-    local TitleLabel = Create("TextLabel", {
-        Name = "Title",
-        BorderSizePixel = 0,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        FontFace = TitleFont,
-        TextColor3 = Library.Scheme.Accent,
-        Size = UDim2.new(0.7, 0, 1, 0),
-        Text = Title,
-        ZIndex = 4,
-        Parent = TopBar,
+    local tl = mk("TextLabel", {
+        Name = "Title", BorderSizePixel = 0, TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1,
+        FontFace = titleFont, TextColor3 = lib.Scheme.Accent,
+        Size = UDim2.new(0.7,0,1,0), Text = title, ZIndex = 4, Parent = top,
     })
-    Pad(TitleLabel, { { "PaddingLeft", UDim.new(0, 10) } })
+    pad(tl, {{"PaddingLeft", UDim.new(0,10)}})
 
-    local ExitBtn = Create("ImageButton", {
-        Name = "ExitBtn",
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        AutoButtonColor = false,
-        Image = "rbxassetid://132261474823036",
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -30, 0, 0),
-        ZIndex = 4,
-        Parent = TopBar,
+    local exitBtn = mk("ImageButton", {
+        Name = "ExitBtn", BorderSizePixel = 0, BackgroundTransparency = 1,
+        AutoButtonColor = false, Image = "rbxassetid://132261474823036",
+        Size = UDim2.new(0,30,0,30), Position = UDim2.new(1,-30,0,0),
+        ZIndex = 4, Parent = top,
     })
 
-    local Navigation = Create("Frame", {
-        Name = "Navigation",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Library.Scheme.Content,
-        ClipsDescendants = true,
-        Size = UDim2.new(1, 0, 0, 32),
-        Position = UDim2.new(0, 0, 0, 30),
-        ZIndex = 2,
-        Parent = Main,
+    local nav = mk("Frame", {
+        Name = "Navigation", BorderSizePixel = 0,
+        BackgroundColor3 = lib.Scheme.Content, ClipsDescendants = true,
+        Size = UDim2.new(1,0,0,32), Position = UDim2.new(0,0,0,30),
+        ZIndex = 2, Parent = main,
     })
-    Stroke(Navigation, Library.Scheme.Outline, 1)
+    stroke(nav, lib.Scheme.Outline, 1)
 
-    local ButtonHolder = Create("ScrollingFrame", {
-        Name = "ButtonHolder",
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        CanvasSize = UDim2.new(0, 0, 1, 0),
+    local bh = mk("ScrollingFrame", {
+        Name = "ButtonHolder", BackgroundTransparency = 1, BorderSizePixel = 0,
+        Size = UDim2.new(1,0,1,0),
+        CanvasSize = UDim2.new(0,0,1,0),
         AutomaticCanvasSize = Enum.AutomaticSize.X,
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = Library.Scheme.Accent,
+        ScrollBarThickness = 2, ScrollBarImageColor3 = lib.Scheme.Accent,
         ScrollBarImageTransparency = 0.3,
         ScrollingDirection = Enum.ScrollingDirection.X,
         ElasticBehavior = Enum.ElasticBehavior.Never,
-        ZIndex = 3,
-        Parent = Navigation,
+        ZIndex = 3, Parent = nav,
     })
-    local NavLayout = Create("UIListLayout", {
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
+    local nlay = mk("UIListLayout", {
+        Padding = UDim.new(0,2), SortOrder = Enum.SortOrder.LayoutOrder,
         FillDirection = Enum.FillDirection.Horizontal,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Parent = ButtonHolder,
+        Parent = bh,
     })
-    Pad(ButtonHolder, {
-        { "PaddingLeft", UDim.new(0, 4) },
-        { "PaddingRight", UDim.new(0, 4) },
-        { "PaddingTop", UDim.new(0, 4) },
-        { "PaddingBottom", UDim.new(0, 4) },
+    pad(bh, {
+        {"PaddingLeft", UDim.new(0,4)}, {"PaddingRight", UDim.new(0,4)},
+        {"PaddingTop", UDim.new(0,4)}, {"PaddingBottom", UDim.new(0,4)},
     })
 
-    local ContentContainer = Create("Frame", {
-        Name = "ContentContainer",
-        BorderSizePixel = 0,
-        BackgroundColor3 = Library.Scheme.Content,
-        Size = UDim2.new(1, -12, 1, -78),
-        Position = UDim2.new(0, 6, 0, 66),
-        ZIndex = 2,
-        Parent = Main,
+    local cc = mk("Frame", {
+        Name = "ContentContainer", BorderSizePixel = 0,
+        BackgroundColor3 = lib.Scheme.Content,
+        Size = UDim2.new(1,-12,1,-78), Position = UDim2.new(0,6,0,66),
+        ZIndex = 2, Parent = main,
     })
-    Stroke(ContentContainer, Library.Scheme.Outline, 1)
+    stroke(cc, lib.Scheme.Outline, 1)
 
-    local Dragging = false
-    local DragStart, StartPos
+    local drag = false
+    local ds, sp
 
-    TopBar.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = Input.Position
-            StartPos = Main.Position
+    top.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            drag = true; ds = inp.Position; sp = main.Position
         end
     end)
-    UserInputService.InputChanged:Connect(function(Input)
-        if not Dragging then return end
-        if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
-            local Delta = Input.Position - DragStart
-            Main.Position = UDim2.new(
-                StartPos.X.Scale, StartPos.X.Offset + Delta.X,
-                StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
-            )
+    uis.InputChanged:Connect(function(inp)
+        if not drag then return end
+        if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+            local d = inp.Position - ds
+            main.Position = UDim2.new(sp.X.Scale, sp.X.Offset+d.X, sp.Y.Scale, sp.Y.Offset+d.Y)
         end
     end)
-    UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
+    uis.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            drag = false
         end
     end)
 
-    UserInputService.InputBegan:Connect(function(Input, GPE)
-        if GPE then return end
-        if Input.KeyCode == Keybind then
-            Main.Visible = not Main.Visible
-            Library.IsOpen = Main.Visible
+    uis.InputBegan:Connect(function(inp, gp)
+        if gp then return end
+        if inp.KeyCode == key then
+            main.Visible = not main.Visible
+            lib.IsOpen = main.Visible
         end
     end)
 
-    ExitBtn.MouseButton1Click:Connect(function()
-        Main.Visible = not Main.Visible
-        Library.IsOpen = Main.Visible
+    exitBtn.MouseButton1Click:Connect(function()
+        main.Visible = not main.Visible
+        lib.IsOpen = main.Visible
     end)
 
-    Self.Main = Main
-    Self.ContentContainer = ContentContainer
-    Self.Navigation = Navigation
-    Self.ButtonHolder = ButtonHolder
-    Self.NavLayout = NavLayout
-    Self.Keybind = Keybind
+    self.Main = main
+    self.ContentContainer = cc
+    self.Navigation = nav
+    self.ButtonHolder = bh
+    self.NavLayout = nlay
+    self.Keybind = key
 
-    function Self:SelectTab(Tab)
-        if Self.ActiveTab == Tab then return end
-        Self.ActiveTab = Tab
-        for _, T in ipairs(Self.Tabs) do
-            T.Frame.Visible = (T == Tab)
-            local IsActive = (T == Tab)
-            TweenService:Create(T.Button, TweenInfo.new(0.18), {
-                BackgroundColor3 = IsActive and Library.Scheme.Element or Library.Scheme.Content,
-                TextColor3 = IsActive and Library.Scheme.Accent or Library.Scheme.TextDim,
+    function self:SelectTab(t)
+        if self.ActiveTab == t then return end
+        self.ActiveTab = t
+        for _,x in ipairs(self.Tabs) do
+            x.Frame.Visible = (x == t)
+            local on = (x == t)
+            tw:Create(x.Button, TweenInfo.new(0.18), {
+                BackgroundColor3 = on and lib.Scheme.Element or lib.Scheme.Content,
+                TextColor3 = on and lib.Scheme.Accent or lib.Scheme.TextDim,
             }):Play()
         end
     end
 
-    function Self:Toggle()
-        Main.Visible = not Main.Visible
-        Library.IsOpen = Main.Visible
+    function self:Toggle()
+        main.Visible = not main.Visible
+        lib.IsOpen = main.Visible
     end
 
-    function Self:Destroy()
-        Main:Destroy()
-        ScreenGui:Destroy()
+    function self:Destroy()
+        main:Destroy(); gui:Destroy()
     end
 
-    function Self:CreateTab(Name)
-        local TabBtn = Create("TextButton", {
-            Name = "Tab_" .. Name,
-            BorderSizePixel = 0,
-            TextSize = 14,
-            BackgroundColor3 = Library.Scheme.Content,
-            FontFace = FontFace,
-            TextColor3 = Library.Scheme.TextDim,
-            Size = UDim2.new(0, 100, 1, 0),
-            AutomaticSize = Enum.AutomaticSize.X,
-            AutoButtonColor = false,
-            Text = Name,
-            ZIndex = 4,
-            Parent = ButtonHolder,
+    function self:CreateTab(name)
+        local btn = mk("TextButton", {
+            Name = "Tab_"..name, BorderSizePixel = 0, TextSize = 14,
+            BackgroundColor3 = lib.Scheme.Content, FontFace = font,
+            TextColor3 = lib.Scheme.TextDim, Size = UDim2.new(0,100,1,0),
+            AutomaticSize = Enum.AutomaticSize.X, AutoButtonColor = false,
+            Text = name, ZIndex = 4, Parent = bh,
         })
-        Corner(TabBtn, 4)
-        Stroke(TabBtn, Library.Scheme.Outline, 1)
-        Pad(TabBtn, {
-            { "PaddingLeft", UDim.new(0, 12) },
-            { "PaddingRight", UDim.new(0, 12) },
-        })
+        corner(btn, 4)
+        stroke(btn, lib.Scheme.Outline, 1)
+        pad(btn, {{"PaddingLeft", UDim.new(0,12)}, {"PaddingRight", UDim.new(0,12)}})
 
-        local TabFrame = Create("ScrollingFrame", {
-            Name = Name .. "Tab",
-            BorderSizePixel = 0,
-            BackgroundColor3 = Library.Scheme.Content,
-            Size = UDim2.new(1, 0, 1, 0),
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            ScrollBarThickness = 5,
-            ScrollBarImageColor3 = Library.Scheme.Outline,
+        local fr = mk("ScrollingFrame", {
+            Name = name.."Tab", BorderSizePixel = 0,
+            BackgroundColor3 = lib.Scheme.Content, Size = UDim2.new(1,0,1,0),
+            CanvasSize = UDim2.new(0,0,0,0), ScrollBarThickness = 5,
+            ScrollBarImageColor3 = lib.Scheme.Outline,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y,
-            ClipsDescendants = true,
-            Visible = false,
-            ZIndex = 2,
-            Parent = ContentContainer,
+            ClipsDescendants = true, Visible = false, ZIndex = 2, Parent = cc,
         })
 
-        local Tab = {
-            Name = Name,
-            Button = TabBtn,
-            Frame = TabFrame,
-            Library = Self,
-            __GB = {},
-            Widgets = {},
-        }
+        local tab = {Name=name, Button=btn, Frame=fr, Library=self, __GB={}, Widgets={}}
 
-        TabBtn.MouseEnter:Connect(function()
-            if Self.ActiveTab ~= Tab then
-                TweenService:Create(TabBtn, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.Element }):Play()
+        btn.MouseEnter:Connect(function()
+            if self.ActiveTab ~= tab then
+                tw:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.Element}):Play()
             end
         end)
-        TabBtn.MouseLeave:Connect(function()
-            if Self.ActiveTab ~= Tab then
-                TweenService:Create(TabBtn, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.Content }):Play()
+        btn.MouseLeave:Connect(function()
+            if self.ActiveTab ~= tab then
+                tw:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.Content}):Play()
             end
         end)
-        TabBtn.MouseButton1Click:Connect(function()
-            Self:SelectTab(Tab)
-        end)
+        btn.MouseButton1Click:Connect(function() self:SelectTab(tab) end)
 
-        Tab.AddLeftGB = function(_, GBName) return CreateGroupBox(Tab, GBName, "left") end
-        Tab.AddRightGB = function(_, GBName) return CreateGroupBox(Tab, GBName, "right") end
+        tab.AddLeftGB = function(_, n) return mkGB(tab, n, "left") end
+        tab.AddRightGB = function(_, n) return mkGB(tab, n, "right") end
 
-        table.insert(Self.Tabs, Tab)
-        if not Self.ActiveTab then Self:SelectTab(Tab) end
-
-        return Tab
+        table.insert(self.Tabs, tab)
+        if not self.ActiveTab then self:SelectTab(tab) end
+        return tab
     end
 
-    Self.Library = Library
-
-    return Self
+    self.Library = lib
+    return self
 end
 
-CreateToggle = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Toggle"
-    local Default = Options.Default or false
-    local Callback = Options.Callback
-    local Id = Options.Id or ("Toggle_" .. NextId())
+-- ============== widgets ==============
 
-    local Frame = Create("Frame", {
-        Name = "Toggle",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 40),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+makeToggle = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Toggle"
+    local def = o.Default or false
+    local cb = o.Callback
+    local id = o.Id or ("Toggle_"..nextId())
+
+    local fr = mk("Frame", {
+        Name = "Toggle", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,40), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -40, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(1,-40,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
 
-    local CheckHolder = Create("Frame", {
-        Size = UDim2.new(0, 20, 0, 20),
-        Position = UDim2.new(1, -28, 0.5, -10),
-        BackgroundColor3 = Default and Library.Scheme.Accent or Library.Scheme.SliderBack,
-        BorderSizePixel = 0,
-        ZIndex = 5,
-        Parent = Frame,
+    local ch = mk("Frame", {
+        Size = UDim2.new(0,20,0,20), Position = UDim2.new(1,-28,0.5,-10),
+        BackgroundColor3 = def and lib.Scheme.Accent or lib.Scheme.SliderBack,
+        BorderSizePixel = 0, ZIndex = 5, Parent = fr,
     })
-    Stroke(CheckHolder, Default and Library.Scheme.Accent or Library.Scheme.Outline, 1)
-    Corner(CheckHolder, 3)
+    stroke(ch, def and lib.Scheme.Accent or lib.Scheme.Outline, 1)
+    corner(ch, 3)
 
-    local State = Default
-    local Entry
-    Entry = {
-        Id = Id,
-        Type = "Toggle",
-        Value = State,
-        Frame = Frame,
-        SetValue = function(_, V)
-            State = V and true or false
-            CheckHolder.BackgroundColor3 = State and Library.Scheme.Accent or Library.Scheme.SliderBack
-            CheckHolder.UIStroke.Color = State and Library.Scheme.Accent or Library.Scheme.Outline
-            Entry.Value = State
-            if Callback then task.spawn(Callback, State) end
+    local st = def
+    local e
+    e = {
+        Id = id, Type = "Toggle", Value = st, Frame = fr,
+        SetValue = function(_, v)
+            st = v and true or false
+            ch.BackgroundColor3 = st and lib.Scheme.Accent or lib.Scheme.SliderBack
+            ch.UIStroke.Color = st and lib.Scheme.Accent or lib.Scheme.Outline
+            e.Value = st
+            if cb then task.spawn(cb, st) end
         end,
     }
 
-    Frame.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Entry.SetValue(Entry, not State)
+    fr.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            e.SetValue(e, not st)
         end
     end)
+    fr.MouseEnter:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.ElementHover}):Play() end)
+    fr.MouseLeave:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.Element}):Play() end)
 
-    Frame.MouseEnter:Connect(function()
-        TweenService:Create(Frame, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.ElementHover }):Play()
-    end)
-    Frame.MouseLeave:Connect(function()
-        TweenService:Create(Frame, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.Element }):Play()
-    end)
-
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
-    return {
-        Set = function(_, V) Entry.SetValue(Entry, V) end,
-        Get = function() return State end,
-    }
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
+    return { Set=function(_,v) e.SetValue(e,v) end, Get=function() return st end }
 end
 
-CreateSlider = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Slider"
-    local Min = Options.Min or 0
-    local Max = Options.Max or 100
-    local Default = Options.Default or Min
-    local Rounding = Options.Rounding or 0
-    local Callback = Options.Callback
-    local Id = Options.Id or ("Slider_" .. NextId())
+makeSlider = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Slider"
+    local mn = o.Min or 0
+    local mx = o.Max or 100
+    local def = o.Default or mn
+    local rnd = o.Rounding or 0
+    local sfx = o.Suffix or ""
+    local cb = o.Callback
+    local id = o.Id or ("Slider_"..nextId())
 
-    local Frame = Create("Frame", {
-        Name = "Slider",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 44),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+    local fr = mk("Frame", {
+        Name = "Slider", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,44), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(0.7, 0, 0, 20),
-        Position = UDim2.new(0, 12, 0, 4),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(0.7,0,0,20), Position = UDim2.new(0,12,0,4),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
 
-    local ValueLbl = Create("TextLabel", {
-        Size = UDim2.new(0.3, -12, 0, 20),
-        Position = UDim2.new(0.7, 0, 0, 4),
-        BackgroundTransparency = 1,
-        Text = tostring(Default),
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        ZIndex = 5,
-        Parent = Frame,
+    local vl = mk("TextLabel", {
+        Size = UDim2.new(0.3,-12,0,20), Position = UDim2.new(0.7,0,0,4),
+        BackgroundTransparency = 1, Text = tostring(def)..sfx,
+        TextColor3 = lib.Scheme.Text, FontFace = font, TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 5, Parent = fr,
     })
 
-    local Track = Create("Frame", {
-        Size = UDim2.new(1, -24, 0, 10),
-        Position = UDim2.new(0, 12, 0, 28),
-        BackgroundColor3 = Library.Scheme.SliderBack,
-        BorderSizePixel = 0,
-        ZIndex = 5,
-        Parent = Frame,
+    local tr = mk("Frame", {
+        Size = UDim2.new(1,-24,0,10), Position = UDim2.new(0,12,0,28),
+        BackgroundColor3 = lib.Scheme.SliderBack, BorderSizePixel = 0,
+        ZIndex = 5, Parent = fr,
     })
-    Corner(Track, 3)
+    corner(tr, 3)
 
-    local Fill = Create("Frame", {
-        Size = UDim2.new(0, 0, 1, 0),
-        BackgroundColor3 = Library.Scheme.Accent,
-        BorderSizePixel = 0,
-        ZIndex = 6,
-        Parent = Track,
+    local fl = mk("Frame", {
+        Size = UDim2.new(0,0,1,0), BackgroundColor3 = lib.Scheme.Accent,
+        BorderSizePixel = 0, ZIndex = 6, Parent = tr,
     })
-    Corner(Fill, 3)
+    corner(fl, 3)
 
-    local Value = Default
-    local Entry
-    local function Apply()
-        local Alpha = (Max > Min) and ((Value - Min) / (Max - Min)) or 0
-        Alpha = math.clamp(Alpha, 0, 1)
-        Fill.Size = UDim2.new(Alpha, 0, 1, 0)
-        ValueLbl.Text = tostring(Value)
+    local val = def
+    local e
+    local function apply()
+        local a = (mx > mn) and ((val - mn) / (mx - mn)) or 0
+        a = math.clamp(a, 0, 1)
+        fl.Size = UDim2.new(a, 0, 1, 0)
+        vl.Text = tostring(val)..sfx
     end
-    Apply()
+    apply()
 
-    Entry = {
-        Id = Id,
-        Type = "Slider",
-        Value = Value,
-        Min = Min,
-        Max = Max,
-        Rounding = Rounding,
-        Frame = Frame,
-        SetValue = function(_, V)
-            V = tonumber(V) or Value
-            V = math.clamp(V, Min, Max)
-            if Rounding > 0 then
-                local Mult = 10 ^ Rounding
-                V = math.floor(V * Mult + 0.5) / Mult
-            else
-                V = math.floor(V + 0.5)
-            end
-            Value = V
-            Entry.Value = V
-            Apply()
-            if Callback then task.spawn(Callback, V) end
+    e = {
+        Id = id, Type = "Slider", Value = val, Min = mn, Max = mx, Rounding = rnd, Frame = fr,
+        SetValue = function(_, v)
+            v = tonumber(v) or val
+            v = math.clamp(v, mn, mx)
+            if rnd > 0 then v = math.floor(v * 10^rnd + 0.5) / 10^rnd
+            else v = math.floor(v + 0.5) end
+            val = v
+            e.Value = v
+            apply()
+            if cb then task.spawn(cb, v) end
         end,
     }
 
-    local Dragging = false
-    local function UpdateFromInput(Input)
-        local TrackAbs = Track.AbsolutePosition
-        local TrackSize = Track.AbsoluteSize
-        local Alpha = math.clamp((Input.Position.X - TrackAbs.X) / math.max(TrackSize.X, 1), 0, 1)
-        local NewVal = Min + (Max - Min) * Alpha
-        Entry.SetValue(Entry, NewVal)
+    local drg = false
+    local function upd(inp)
+        local a = math.clamp((inp.Position.X - tr.AbsolutePosition.X) / math.max(tr.AbsoluteSize.X,1), 0, 1)
+        e.SetValue(e, mn + (mx - mn) * a)
+    end
+    tr.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            drg = true; upd(inp)
+        end
+    end)
+    fl.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            drg = true; upd(inp)
+        end
+    end)
+    uis.InputChanged:Connect(function(inp)
+        if drg and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            upd(inp)
+        end
+    end)
+    uis.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            drg = false
+        end
+    end)
+
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
+    return { Set=function(_,v) e.SetValue(e,v) end, Get=function() return val end }
+end
+
+local function newOverlayList()
+    local lf = mk("ScrollingFrame", {
+        Name = "OverlayList", BackgroundColor3 = lib.Scheme.TopBar,
+        BorderSizePixel = 0, CanvasSize = UDim2.new(0,0,0,0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4,
+        ScrollBarImageColor3 = lib.Scheme.Outline, ZIndex = 501, Parent = overlay,
+    })
+    stroke(lf, lib.Scheme.Outline, 1)
+    corner(lf, 4)
+    mk("UIListLayout", {Padding = UDim.new(0,2), SortOrder = Enum.SortOrder.LayoutOrder, Parent = lf})
+    pad(lf, {
+        {"PaddingTop", UDim.new(0,4)}, {"PaddingBottom", UDim.new(0,4)},
+        {"PaddingLeft", UDim.new(0,4)}, {"PaddingRight", UDim.new(0,4)},
+    })
+    return lf
+end
+
+makeDropdown = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Dropdown"
+    local vals = o.Values or {}
+    local rawDef = o.Default
+    local cb = o.Callback
+    local multi = o.Multi
+    local id = o.Id or ("Dropdown_"..nextId())
+
+    local sel
+    if multi then
+        sel = {}
+        if type(rawDef) == "table" then
+            for k,v in pairs(rawDef) do
+                if type(k) == "number" then sel[v] = true
+                elseif v == true then sel[k] = true end
+            end
+        elseif rawDef then
+            sel[rawDef] = true
+        end
+    else
+        sel = rawDef or vals[1] or ""
     end
 
-    Track.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            UpdateFromInput(Input)
-        end
-    end)
-    Fill.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            UpdateFromInput(Input)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(Input)
-        if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-            UpdateFromInput(Input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
-        end
-    end)
-
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
-    return {
-        Set = function(_, V) Entry.SetValue(Entry, V) end,
-        Get = function() return Value end,
-    }
-end
-
-local function MakeOverlayList()
-    local ListFrame = Create("ScrollingFrame", {
-        Name = "OverlayList",
-        BackgroundColor3 = Library.Scheme.TopBar,
-        BorderSizePixel = 0,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = Library.Scheme.Outline,
-        ZIndex = 501,
-        Parent = Overlay,
+    local fr = mk("Frame", {
+        Name = "Dropdown", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,34),
+        ClipsDescendants = false, ZIndex = 10, Parent = g.Scroll,
     })
-    Stroke(ListFrame, Library.Scheme.Outline, 1)
-    Corner(ListFrame, 4)
-    Create("UIListLayout", {
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = ListFrame,
-    })
-    Pad(ListFrame, {
-        { "PaddingTop", UDim.new(0, 4) },
-        { "PaddingBottom", UDim.new(0, 4) },
-        { "PaddingLeft", UDim.new(0, 4) },
-        { "PaddingRight", UDim.new(0, 4) },
-    })
-    return ListFrame
-end
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-CreateDropdown = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Dropdown"
-    local Values = Options.Values or {}
-    local Default = Options.Default or Values[1] or ""
-    local Callback = Options.Callback
-    local Multi = Options.Multi
-    local Id = Options.Id or ("Dropdown_" .. NextId())
-
-    local Frame = Create("Frame", {
-        Name = "Dropdown",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 34),
-        ClipsDescendants = false,
-        ZIndex = 10,
-        Parent = GB.Scroll,
-    })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
-
-    local TitleLbl = Create("TextLabel", {
-        Size = UDim2.new(1, -40, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text .. ": " .. tostring(Default),
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 11,
-        Parent = Frame,
+    local tl = mk("TextLabel", {
+        Size = UDim2.new(1,-40,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 11, Parent = fr,
     })
 
-    local Arrow = Create("TextLabel", {
-        Size = UDim2.new(0, 20, 1, 0),
-        Position = UDim2.new(1, -28, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "v",
-        TextColor3 = Library.Scheme.TextDim,
-        FontFace = FontFace,
-        TextSize = 14,
-        ZIndex = 11,
-        Parent = Frame,
+    local ar = mk("TextLabel", {
+        Size = UDim2.new(0,20,1,0), Position = UDim2.new(1,-28,0,0),
+        BackgroundTransparency = 1, Text = "v", TextColor3 = lib.Scheme.TextDim,
+        FontFace = font, TextSize = 14, ZIndex = 11, Parent = fr,
     })
 
-    local Selected = Default
-    local Entry
-    local function UpdateLabel()
-        if Multi and type(Selected) == "table" then
-            local Keys = {}
-            for K, V in pairs(Selected) do
-                if V then table.insert(Keys, K) end
-            end
-            if #Keys == 0 then
-                TitleLbl.Text = Text .. ": none"
-            else
-                TitleLbl.Text = Text .. ": " .. table.concat(Keys, ", ")
-            end
+    local function updLbl()
+        if multi then
+            local ks = {}
+            for k,v in pairs(sel) do if v then table.insert(ks, tostring(k)) end end
+            table.sort(ks)
+            tl.Text = #ks == 0 and (txt..": none") or (txt..": "..table.concat(ks,", "))
         else
-            TitleLbl.Text = Text .. ": " .. tostring(Selected)
+            tl.Text = txt..": "..tostring(sel)
         end
     end
+    updLbl()
 
-    Entry = {
-        Id = Id,
-        Type = "Dropdown",
-        Value = Selected,
-        Values = Values,
-        Multi = Multi,
-        Frame = Frame,
-        SetValue = function(_, V)
-            Selected = V
-            Entry.Value = V
-            UpdateLabel()
-            if Callback then task.spawn(Callback, V) end
+    local e
+    e = {
+        Id=id, Type="Dropdown", Value=sel, Values=vals, Multi=multi, Frame=fr,
+        SetValue = function(_, v)
+            if multi then
+                if type(v) == "table" then
+                    sel = {}
+                    for k,val in pairs(v) do
+                        if type(k) == "number" then sel[val] = true
+                        elseif val == true then sel[k] = true end
+                    end
+                elseif v == nil then sel = {}
+                else sel = {[v]=true} end
+            else
+                sel = v
+            end
+            e.Value = sel
+            updLbl()
+            if cb then task.spawn(cb, sel) end
         end,
     }
 
-    local ListOpen = false
-    local ListFrame
-    local AnchorConn
+    local open = false
+    local lf
+    local ancConn
 
-    local function UpdateAnchor()
-        if not ListFrame or not ListFrame.Parent then return end
-        if not Frame.Parent then
-            if ListFrame then ListFrame:Destroy() ListFrame = nil end
-            ListOpen = false
+    local function updAnc()
+        if not lf or not lf.Parent then return end
+        if not fr.Parent then
+            if lf then lf:Destroy(); lf = nil end
+            open = false
             return
         end
-        local Abs = Frame.AbsolutePosition
-        local Size = Frame.AbsoluteSize
-        ListFrame.Position = UDim2.fromOffset(Abs.X, Abs.Y + Size.Y + 4)
-        ListFrame.Size = UDim2.new(0, Size.X, 0, math.min(#Values * 20 + 8, 150))
+        local ap = fr.AbsolutePosition
+        local asz = fr.AbsoluteSize
+        lf.Position = UDim2.fromOffset(ap.X, ap.Y + asz.Y + 4)
+        lf.Size = UDim2.new(0, asz.X, 0, math.min(#vals*20+8, 150))
     end
 
-    local function CloseList()
-        if ListFrame then
-            ListFrame:Destroy()
-            ListFrame = nil
-        end
-        if AnchorConn then
-            AnchorConn:Disconnect()
-            AnchorConn = nil
-        end
-        ListOpen = false
-        TweenService:Create(Arrow, TweenInfo.new(0.15), { Rotation = 0 }):Play()
+    local function close()
+        if lf then lf:Destroy(); lf = nil end
+        if ancConn then ancConn:Disconnect(); ancConn = nil end
+        open = false
+        tw:Create(ar, TweenInfo.new(0.15), {Rotation = 0}):Play()
     end
 
-    local function OpenList()
-        if ListFrame then return end
-        ListFrame = MakeOverlayList()
-        ListFrame.Size = UDim2.new(0, Frame.AbsoluteSize.X, 0, math.min(#Values * 20 + 8, 150))
+    local function openList()
+        if lf then return end
+        lf = newOverlayList()
+        lf.Size = UDim2.new(0, fr.AbsoluteSize.X, 0, math.min(#vals*20+8, 150))
 
-        for _, Value in ipairs(Values) do
-            local IsActive = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
-            local Item = Create("TextLabel", {
-                Size = UDim2.new(1, 0, 0, 18),
-                BackgroundColor3 = IsActive and Library.Scheme.Accent or Library.Scheme.DropdownItem,
-                BorderSizePixel = 0,
-                Text = "  " .. tostring(Value),
-                TextColor3 = Library.Scheme.Text,
-                FontFace = FontFace,
-                TextSize = 13,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 502,
-                Parent = ListFrame,
+        for _, v in ipairs(vals) do
+            local isOn = multi and (type(sel) == "table" and sel[v]) or (not multi and v == sel)
+            local it = mk("TextLabel", {
+                Size = UDim2.new(1,0,0,18),
+                BackgroundColor3 = isOn and lib.Scheme.Accent or lib.Scheme.DropdownItem,
+                BorderSizePixel = 0, Text = "  "..tostring(v),
+                TextColor3 = lib.Scheme.Text, FontFace = font, TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 502, Parent = lf,
             })
-            Corner(Item, 3)
-            Item.InputBegan:Connect(function(Input)
-                if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-                if Multi then
-                    if type(Selected) ~= "table" then Selected = {} end
-                    Selected[Value] = not Selected[Value]
-                    if not Selected[Value] then Selected[Value] = nil end
-                    Entry.Value = Selected
-                    UpdateLabel()
-                    Item.BackgroundColor3 = Selected[Value] and Library.Scheme.Accent or Library.Scheme.DropdownItem
-                    if Callback then task.spawn(Callback, Selected) end
+            corner(it, 3)
+            it.InputBegan:Connect(function(inp)
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+                if multi then
+                    if type(sel) ~= "table" then sel = {} end
+                    sel[v] = not sel[v] or nil
+                    e.Value = sel
+                    updLbl()
+                    it.BackgroundColor3 = sel[v] and lib.Scheme.Accent or lib.Scheme.DropdownItem
+                    if cb then task.spawn(cb, sel) end
                 else
-                    Selected = Value
-                    Entry.Value = Value
-                    UpdateLabel()
-                    if Callback then task.spawn(Callback, Value) end
-                    CloseList()
+                    sel = v; e.Value = v; updLbl()
+                    if cb then task.spawn(cb, v) end
+                    close()
                 end
             end)
-            Item.MouseEnter:Connect(function()
-                local active = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
-                if not active then
-                    Item.BackgroundColor3 = Library.Scheme.ElementHover
-                end
+            it.MouseEnter:Connect(function()
+                local on = multi and (type(sel) == "table" and sel[v]) or (not multi and v == sel)
+                if not on then it.BackgroundColor3 = lib.Scheme.ElementHover end
             end)
-            Item.MouseLeave:Connect(function()
-                local active = (not Multi and Value == Selected) or (Multi and type(Selected) == "table" and Selected[Value])
-                Item.BackgroundColor3 = active and Library.Scheme.Accent or Library.Scheme.DropdownItem
+            it.MouseLeave:Connect(function()
+                local on = multi and (type(sel) == "table" and sel[v]) or (not multi and v == sel)
+                it.BackgroundColor3 = on and lib.Scheme.Accent or lib.Scheme.DropdownItem
             end)
         end
 
-        UpdateAnchor()
-        AnchorConn = RunService.RenderStepped:Connect(UpdateAnchor)
-        ListOpen = true
-        TweenService:Create(Arrow, TweenInfo.new(0.15), { Rotation = 180 }):Play()
+        updAnc()
+        ancConn = rs.RenderStepped:Connect(updAnc)
+        open = true
+        tw:Create(ar, TweenInfo.new(0.15), {Rotation = 180}):Play()
     end
 
-    Frame.InputBegan:Connect(function(Input)
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-        if ListOpen then CloseList() else OpenList() end
+    fr.InputBegan:Connect(function(inp)
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        if open then close() else openList() end
     end)
 
-    UserInputService.InputBegan:Connect(function(Input, GPE)
-        if GPE then return end
-        if not ListOpen then return end
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-        local Pos = Input.Position
-        local Abs = Frame.AbsolutePosition
-        local Size = Frame.AbsoluteSize
-        if Pos.X >= Abs.X and Pos.X <= Abs.X + Size.X and Pos.Y >= Abs.Y and Pos.Y <= Abs.Y + Size.Y then return end
-        if ListFrame then
-            local LAbs = ListFrame.AbsolutePosition
-            local LSize = ListFrame.AbsoluteSize
-            if Pos.X >= LAbs.X and Pos.X <= LAbs.X + LSize.X and Pos.Y >= LAbs.Y and Pos.Y <= LAbs.Y + LSize.Y then return end
+    uis.InputBegan:Connect(function(inp, gp)
+        if gp or not open then return end
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        local p = inp.Position
+        local ap, asz = fr.AbsolutePosition, fr.AbsoluteSize
+        if p.X >= ap.X and p.X <= ap.X+asz.X and p.Y >= ap.Y and p.Y <= ap.Y+asz.Y then return end
+        if lf then
+            local la, ls = lf.AbsolutePosition, lf.AbsoluteSize
+            if p.X >= la.X and p.X <= la.X+ls.X and p.Y >= la.Y and p.Y <= la.Y+ls.Y then return end
         end
-        CloseList()
+        close()
     end)
 
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
     return {
-        SetValue = function(_, V) Entry.SetValue(Entry, V) end,
-        Get = function() return Selected end,
-        SetValues = function(_, List)
-            Values = List
-            Entry.Values = List
-        end,
+        SetValue = function(_,v) e.SetValue(e,v) end,
+        Set = function(_,v) e.SetValue(e,v) end,
+        Get = function() return sel end,
+        SetValues = function(_,l) vals = l; e.Values = l end,
     }
 end
 
-CreateButton = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Button"
-    local Func = Options.Func or Options.Callback
-    local Id = Options.Id or ("Button_" .. NextId())
+makeButton = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Button"
+    local fn = o.Func or o.Callback
+    local id = o.Id or ("Button_"..nextId())
 
-    local Frame = Create("Frame", {
-        Name = "Button",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 32),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+    local fr = mk("Frame", {
+        Name = "Button", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,32), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        ZIndex = 5,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1,
+        Text = txt, TextColor3 = lib.Scheme.Text, FontFace = font, TextSize = 14,
+        ZIndex = 5, Parent = fr,
     })
 
-    Frame.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Frame.BackgroundColor3 = Library.Scheme.Accent
-            if Func then task.spawn(Func) end
+    fr.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            fr.BackgroundColor3 = lib.Scheme.Accent
+            if fn then task.spawn(fn) end
             task.delay(0.15, function()
-                if Frame.Parent then
-                    TweenService:Create(Frame, TweenInfo.new(0.2), { BackgroundColor3 = Library.Scheme.Element }):Play()
-                end
+                if fr.Parent then tw:Create(fr, TweenInfo.new(0.2), {BackgroundColor3 = lib.Scheme.Element}):Play() end
             end)
         end
     end)
-    Frame.MouseEnter:Connect(function()
-        TweenService:Create(Frame, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.ElementHover }):Play()
-    end)
-    Frame.MouseLeave:Connect(function()
-        TweenService:Create(Frame, TweenInfo.new(0.15), { BackgroundColor3 = Library.Scheme.Element }):Play()
-    end)
+    fr.MouseEnter:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.ElementHover}):Play() end)
+    fr.MouseLeave:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.Element}):Play() end)
 
-    local Entry = { Id = Id, Type = "Button", Frame = Frame }
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
+    reg(id, {Id=id, Type="Button", Frame=fr})
+    table.insert(g.Widgets, {Id=id, Type="Button", Frame=fr})
     return {}
 end
 
-CreateLabel = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or ""
-    local Frame = Create("Frame", {
-        Name = "Label",
-        BackgroundColor3 = Library.Scheme.Content,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 26),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+makeLabel = function(g, o)
+    o = o or {}
+    local txt = o.Text or ""
+    local fr = mk("Frame", {
+        Name = "Label", BackgroundColor3 = lib.Scheme.Content,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,26), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.OutlineDim, 1)
-    Corner(Frame, 4)
-    Create("TextLabel", {
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    stroke(fr, lib.Scheme.OutlineDim, 1)
+    corner(fr, 4)
+    mk("TextLabel", {
+        Size = UDim2.new(1,-16,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
     return {}
 end
 
-CreateInfo = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or ""
-    local Frame = Create("Frame", {
-        Name = "Info",
-        BackgroundColor3 = Library.Scheme.InfoBg,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 26),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+makeInfo = function(g, o)
+    o = o or {}
+    local txt = o.Text or ""
+    local fr = mk("Frame", {
+        Name = "Info", BackgroundColor3 = lib.Scheme.InfoBg,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,26), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.InfoBorder, 1)
-    Corner(Frame, 4)
-    Create("TextLabel", {
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.InfoText,
-        FontFace = FontFace,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    stroke(fr, lib.Scheme.InfoBorder, 1)
+    corner(fr, 4)
+    mk("TextLabel", {
+        Size = UDim2.new(1,-16,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.InfoText,
+        FontFace = font, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
     return {}
 end
 
-CreateWarning = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or ""
-    local Frame = Create("Frame", {
-        Name = "Warning",
-        BackgroundColor3 = Library.Scheme.WarningBg,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 26),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+makeWarn = function(g, o)
+    o = o or {}
+    local txt = o.Text or ""
+    local fr = mk("Frame", {
+        Name = "Warning", BackgroundColor3 = lib.Scheme.WarningBg,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,26), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.WarningBorder, 1)
-    Corner(Frame, 4)
-    Create("TextLabel", {
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.WarningText,
-        FontFace = FontFace,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    stroke(fr, lib.Scheme.WarningBorder, 1)
+    corner(fr, 4)
+    mk("TextLabel", {
+        Size = UDim2.new(1,-16,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.WarningText,
+        FontFace = font, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
     return {}
 end
 
-CreateColorPicker = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or Options.Title or "Color"
-    local Default = Options.Default or Color3.new(1, 1, 1)
-    local Callback = Options.Callback
-    local Id = Options.Id or ("Color_" .. NextId())
+makeColor = function(g, o)
+    o = o or {}
+    local txt = o.Text or o.Title or "Color"
+    local def = o.Default or Color3.new(1,1,1)
+    local cb = o.Callback
+    local id = o.Id or ("Color_"..nextId())
 
-    local Frame = Create("Frame", {
-        Name = "ColorPicker",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 34),
-        ClipsDescendants = false,
-        ZIndex = 10,
-        Parent = GB.Scroll,
+    local fr = mk("Frame", {
+        Name = "ColorPicker", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,34),
+        ClipsDescendants = false, ZIndex = 10, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -50, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 11,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(1,-50,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 11, Parent = fr,
     })
 
-    local Swatch = Create("Frame", {
-        Size = UDim2.new(0, 20, 0, 20),
-        Position = UDim2.new(1, -32, 0.5, -10),
-        BackgroundColor3 = Default,
-        BorderSizePixel = 0,
-        ZIndex = 11,
-        Parent = Frame,
+    local sw = mk("Frame", {
+        Size = UDim2.new(0,20,0,20), Position = UDim2.new(1,-32,0.5,-10),
+        BackgroundColor3 = def, BorderSizePixel = 0, ZIndex = 11, Parent = fr,
     })
-    Stroke(Swatch, Library.Scheme.Outline, 1)
-    Corner(Swatch, 3)
+    stroke(sw, lib.Scheme.Outline, 1)
+    corner(sw, 3)
 
-    local Presets = {
-        Color3.fromRGB(255, 81, 81),
-        Color3.fromRGB(255, 170, 0),
-        Color3.fromRGB(255, 255, 0),
-        Color3.fromRGB(80, 255, 80),
-        Color3.fromRGB(0, 200, 255),
-        Color3.fromRGB(156, 90, 255),
-        Color3.fromRGB(255, 100, 200),
-        Color3.fromRGB(255, 255, 255),
-        Color3.fromRGB(0, 0, 0),
+    local presets = {
+        Color3.fromRGB(255,81,81), Color3.fromRGB(255,170,0), Color3.fromRGB(255,255,0),
+        Color3.fromRGB(80,255,80), Color3.fromRGB(0,200,255), Color3.fromRGB(156,90,255),
+        Color3.fromRGB(255,100,200), Color3.fromRGB(255,255,255), Color3.fromRGB(0,0,0),
     }
 
-    local Entry
-    Entry = {
-        Id = Id,
-        Type = "ColorPicker",
-        Value = Default,
-        Frame = Frame,
-        SetValue = function(_, C)
-            Entry.Value = C
-            Swatch.BackgroundColor3 = C
-            if Callback then task.spawn(Callback, C) end
+    local e = {
+        Id=id, Type="ColorPicker", Value=def, Frame=fr,
+        SetValue = function(_, c)
+            e.Value = c
+            sw.BackgroundColor3 = c
+            if cb then task.spawn(cb, c) end
         end,
     }
 
-    local ListOpen = false
-    local ListFrame
-    local AnchorConn
-
-    local function UpdateAnchor()
-        if not ListFrame or not ListFrame.Parent then return end
-        if not Frame.Parent then
-            if ListFrame then ListFrame:Destroy() ListFrame = nil end
-            ListOpen = false
-            return
-        end
-        local Abs = Frame.AbsolutePosition
-        local Size = Frame.AbsoluteSize
-        local ListW = 160
-        ListFrame.Position = UDim2.fromOffset(Abs.X + Size.X - ListW, Abs.Y + Size.Y + 4)
+    local open, lf, ancConn
+    local function close() if lf then lf:Destroy(); lf = nil end; if ancConn then ancConn:Disconnect(); ancConn = nil end; open = false end
+    local function updAnc()
+        if not lf or not lf.Parent then return end
+        if not fr.Parent then if lf then lf:Destroy(); lf = nil end; open = false; return end
+        local ap, asz = fr.AbsolutePosition, fr.AbsoluteSize
+        lf.Position = UDim2.fromOffset(ap.X + asz.X - 160, ap.Y + asz.Y + 4)
     end
-
-    local function CloseList()
-        if ListFrame then
-            ListFrame:Destroy()
-            ListFrame = nil
-        end
-        if AnchorConn then
-            AnchorConn:Disconnect()
-            AnchorConn = nil
-        end
-        ListOpen = false
-    end
-
-    local function OpenList()
-        if ListFrame then return end
-        ListFrame = Create("Frame", {
-            Name = "OverlayColor",
-            BackgroundColor3 = Library.Scheme.TopBar,
-            BorderSizePixel = 0,
-            Size = UDim2.new(0, 160, 0, 60),
-            ZIndex = 501,
-            Parent = Overlay,
+    local function openList()
+        if lf then return end
+        lf = mk("Frame", {
+            Name = "OverlayColor", BackgroundColor3 = lib.Scheme.TopBar,
+            BorderSizePixel = 0, Size = UDim2.new(0,160,0,60),
+            ZIndex = 501, Parent = overlay,
         })
-        Stroke(ListFrame, Library.Scheme.Outline, 1)
-        Corner(ListFrame, 4)
-        Create("UIGridLayout", {
-            CellSize = UDim2.new(0, 24, 0, 24),
-            CellPadding = UDim2.new(0, 4, 0, 4),
-            Parent = ListFrame,
+        stroke(lf, lib.Scheme.Outline, 1)
+        corner(lf, 4)
+        mk("UIGridLayout", {
+            CellSize = UDim2.new(0,24,0,24), CellPadding = UDim2.new(0,4,0,4), Parent = lf,
         })
-        Pad(ListFrame, {
-            { "PaddingTop", UDim.new(0, 4) },
-            { "PaddingLeft", UDim.new(0, 4) },
-            { "PaddingRight", UDim.new(0, 4) },
-            { "PaddingBottom", UDim.new(0, 4) },
+        pad(lf, {
+            {"PaddingTop", UDim.new(0,4)}, {"PaddingLeft", UDim.new(0,4)},
+            {"PaddingRight", UDim.new(0,4)}, {"PaddingBottom", UDim.new(0,4)},
         })
-        for _, C in ipairs(Presets) do
-            local Btn = Create("Frame", {
-                BackgroundColor3 = C,
-                BorderSizePixel = 0,
-                ZIndex = 502,
-                Parent = ListFrame,
-            })
-            Stroke(Btn, Library.Scheme.Outline, 1)
-            Corner(Btn, 3)
-            Btn.InputBegan:Connect(function(Input)
-                if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-                Entry.SetValue(Entry, C)
-                CloseList()
+        for _, c in ipairs(presets) do
+            local b = mk("Frame", {BackgroundColor3 = c, BorderSizePixel = 0, ZIndex = 502, Parent = lf})
+            stroke(b, lib.Scheme.Outline, 1)
+            corner(b, 3)
+            b.InputBegan:Connect(function(inp)
+                if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+                e.SetValue(e, c); close()
             end)
         end
-        UpdateAnchor()
-        AnchorConn = RunService.RenderStepped:Connect(UpdateAnchor)
-        ListOpen = true
+        updAnc()
+        ancConn = rs.RenderStepped:Connect(updAnc)
+        open = true
     end
 
-    Frame.InputBegan:Connect(function(Input)
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-        if ListOpen then CloseList() else OpenList() end
+    fr.InputBegan:Connect(function(inp)
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        if open then close() else openList() end
     end)
-
-    UserInputService.InputBegan:Connect(function(Input, GPE)
-        if GPE then return end
-        if not ListOpen then return end
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-        local Pos = Input.Position
-        local Abs = Frame.AbsolutePosition
-        local Size = Frame.AbsoluteSize
-        if Pos.X >= Abs.X and Pos.X <= Abs.X + Size.X and Pos.Y >= Abs.Y and Pos.Y <= Abs.Y + Size.Y then return end
-        if ListFrame then
-            local LAbs = ListFrame.AbsolutePosition
-            local LSize = ListFrame.AbsoluteSize
-            if Pos.X >= LAbs.X and Pos.X <= LAbs.X + LSize.X and Pos.Y >= LAbs.Y and Pos.Y <= LAbs.Y + LSize.Y then return end
+    uis.InputBegan:Connect(function(inp, gp)
+        if gp or not open then return end
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        local p = inp.Position
+        local ap, asz = fr.AbsolutePosition, fr.AbsoluteSize
+        if p.X >= ap.X and p.X <= ap.X+asz.X and p.Y >= ap.Y and p.Y <= ap.Y+asz.Y then return end
+        if lf then
+            local la, ls = lf.AbsolutePosition, lf.AbsoluteSize
+            if p.X >= la.X and p.X <= la.X+ls.X and p.Y >= la.Y and p.Y <= la.Y+ls.Y then return end
         end
-        CloseList()
+        close()
     end)
 
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
-    return {
-        SetValue = function(_, C) Entry.SetValue(Entry, C) end,
-        Get = function() return Entry.Value end,
-    }
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
+    return { SetValue=function(_,c) e.SetValue(e,c) end, Get=function() return e.Value end }
 end
 
-CreateKeyPicker = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Key"
-    local Default = Options.Default or "None"
-    local Callback = Options.Callback
-    local Id = Options.Id or ("Key_" .. NextId())
+makeKey = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Key"
+    local def = o.Default or "None"
+    local cb = o.Callback
+    local id = o.Id or ("Key_"..nextId())
 
-    local Frame = Create("Frame", {
-        Name = "KeyPicker",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 34),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+    local fr = mk("Frame", {
+        Name = "KeyPicker", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,34), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(1, -80, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(1,-80,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
 
-    local Value = Default
-    local KeyLbl = Create("TextLabel", {
-        Size = UDim2.new(0, 60, 0, 22),
-        Position = UDim2.new(1, -68, 0.5, -11),
-        BackgroundColor3 = Library.Scheme.SliderBack,
-        BorderSizePixel = 0,
-        Text = tostring(Default),
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 13,
-        ZIndex = 5,
-        Parent = Frame,
+    local val = def
+    local kl = mk("TextLabel", {
+        Size = UDim2.new(0,60,0,22), Position = UDim2.new(1,-68,0.5,-11),
+        BackgroundColor3 = lib.Scheme.SliderBack, BorderSizePixel = 0,
+        Text = tostring(def), TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 13, ZIndex = 5, Parent = fr,
     })
-    Stroke(KeyLbl, Library.Scheme.Outline, 1)
-    Corner(KeyLbl, 3)
+    stroke(kl, lib.Scheme.Outline, 1)
+    corner(kl, 3)
 
-    local Listening = false
-    local Entry
-    Entry = {
-        Id = Id,
-        Type = "KeyPicker",
-        Value = Value,
-        Mode = "Toggle",
-        Frame = Frame,
-        SetValue = function(_, V)
-            Value = V
-            Entry.Value = V
-            KeyLbl.Text = tostring(V)
-            if Callback then task.spawn(Callback, V) end
+    local listen = false
+    local e
+    e = {
+        Id=id, Type="KeyPicker", Value=val, Mode="Toggle", Frame=fr,
+        SetValue = function(_, v)
+            val = v; e.Value = v; kl.Text = tostring(v)
+            if cb then task.spawn(cb, v) end
         end,
         GetState = function()
-            if Value == "None" then return false end
-            return UserInputService:IsKeyDown(Enum.KeyCode[Value])
+            if val == "None" then return false end
+            return uis:IsKeyDown(Enum.KeyCode[val])
         end,
     }
 
-    KeyLbl.InputBegan:Connect(function(Input)
-        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 and Input.UserInputType ~= Enum.UserInputType.Touch then return end
-        Listening = true
-        KeyLbl.Text = "..."
-        KeyLbl.BackgroundColor3 = Library.Scheme.Accent
+    kl.InputBegan:Connect(function(inp)
+        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+        listen = true
+        kl.Text = "..."
+        kl.BackgroundColor3 = lib.Scheme.Accent
     end)
-
-    UserInputService.InputBegan:Connect(function(Input, GPE)
-        if not Listening then return end
-        if Input.UserInputType == Enum.UserInputType.Keyboard then
-            if Input.KeyCode == Enum.KeyCode.Escape then
-                Value = "None"
-            else
-                Value = Input.KeyCode.Name
-            end
-            Entry.Value = Value
-            KeyLbl.Text = tostring(Value)
-            KeyLbl.BackgroundColor3 = Library.Scheme.SliderBack
-            Listening = false
-            if Callback then task.spawn(Callback, Value) end
+    uis.InputBegan:Connect(function(inp, gp)
+        if not listen then return end
+        if inp.UserInputType == Enum.UserInputType.Keyboard then
+            val = inp.KeyCode == Enum.KeyCode.Escape and "None" or inp.KeyCode.Name
+            e.Value = val
+            kl.Text = tostring(val)
+            kl.BackgroundColor3 = lib.Scheme.SliderBack
+            listen = false
+            if cb then task.spawn(cb, val) end
         end
     end)
 
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
-    return {
-        SetValue = function(_, V) Entry.SetValue(Entry, V) end,
-        GetState = Entry.GetState,
-    }
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
+    return { SetValue=function(_,v) e.SetValue(e,v) end, GetState=e.GetState }
 end
 
-CreateInput = function(GB, Options)
-    Options = Options or {}
-    local Text = Options.Text or "Input"
-    local Default = Options.Default or ""
-    local Placeholder = Options.Placeholder or "type..."
-    local Callback = Options.Callback
-    local Id = Options.Id or ("Input_" .. NextId())
+makeInput = function(g, o)
+    o = o or {}
+    local txt = o.Text or "Input"
+    local def = o.Default or ""
+    local ph = o.Placeholder or "type..."
+    local cb = o.Callback
+    local id = o.Id or ("Input_"..nextId())
 
-    local Frame = Create("Frame", {
-        Name = "Input",
-        BackgroundColor3 = Library.Scheme.Element,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 34),
-        ZIndex = 4,
-        Parent = GB.Scroll,
+    local fr = mk("Frame", {
+        Name = "Input", BackgroundColor3 = lib.Scheme.Element,
+        BorderSizePixel = 0, Size = UDim2.new(1,0,0,34), ZIndex = 4, Parent = g.Scroll,
     })
-    Stroke(Frame, Library.Scheme.Outline, 1)
-    Corner(Frame, 4)
+    stroke(fr, lib.Scheme.Outline, 1)
+    corner(fr, 4)
 
-    Create("TextLabel", {
-        Size = UDim2.new(0.4, 0, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = Library.Scheme.Text,
-        FontFace = FontFace,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5,
-        Parent = Frame,
+    mk("TextLabel", {
+        Size = UDim2.new(0.4,0,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = txt, TextColor3 = lib.Scheme.Text,
+        FontFace = font, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5, Parent = fr,
     })
 
-    local Box = Create("TextBox", {
-        Size = UDim2.new(0.55, -14, 0, 22),
-        Position = UDim2.new(0.45, 0, 0.5, -11),
-        BackgroundColor3 = Library.Scheme.SliderBack,
-        BorderSizePixel = 0,
-        Text = Default,
-        PlaceholderText = Placeholder,
-        TextColor3 = Library.Scheme.Text,
-        PlaceholderColor3 = Library.Scheme.TextDim,
-        FontFace = FontFace,
-        TextSize = 13,
-        ClearTextOnFocus = false,
-        ZIndex = 5,
-        Parent = Frame,
+    local bx = mk("TextBox", {
+        Size = UDim2.new(0.55,-14,0,22), Position = UDim2.new(0.45,0,0.5,-11),
+        BackgroundColor3 = lib.Scheme.SliderBack, BorderSizePixel = 0,
+        Text = def, PlaceholderText = ph, TextColor3 = lib.Scheme.Text,
+        PlaceholderColor3 = lib.Scheme.TextDim, FontFace = font, TextSize = 13,
+        ClearTextOnFocus = false, ZIndex = 5, Parent = fr,
     })
-    Stroke(Box, Library.Scheme.Outline, 1)
-    Corner(Box, 3)
+    stroke(bx, lib.Scheme.Outline, 1)
+    corner(bx, 3)
 
-    local Entry
-    Entry = {
-        Id = Id,
-        Type = "Input",
-        Value = Default,
-        Frame = Frame,
-        SetValue = function(_, V)
-            Entry.Value = V
-            Box.Text = tostring(V)
-            if Callback then task.spawn(Callback, V) end
+    local e = {
+        Id=id, Type="Input", Value=def, Frame=fr,
+        SetValue = function(_, v)
+            e.Value = v; bx.Text = tostring(v)
+            if cb then task.spawn(cb, v) end
         end,
     }
-
-    Box.FocusLost:Connect(function()
-        Entry.Value = Box.Text
-        if Callback then task.spawn(Callback, Box.Text) end
+    bx.FocusLost:Connect(function()
+        e.Value = bx.Text
+        if cb then task.spawn(cb, bx.Text) end
     end)
 
-    RegisterOption(Id, Entry)
-    table.insert(GB.Widgets, Entry)
-    table.insert(GB.Tab.Widgets, Entry)
-
-    return {
-        SetValue = function(_, V) Entry.SetValue(Entry, V) end,
-        Get = function() return Entry.Value end,
-    }
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
+    return { SetValue=function(_,v) e.SetValue(e,v) end, Get=function() return e.Value end }
 end
 
-return Library
+-- TODO: add tabs-inside-tabs someday
+-- color: maybe add rgb input later
+
+return lib
