@@ -49,7 +49,6 @@ else
     gui.Parent = game:GetService("CoreGui")
 end
 
--- overlay for dropdowns/colorpickers so they dont clip
 local overlay = Instance.new("Frame")
 overlay.Name = "Overlay"
 overlay.BackgroundTransparency = 1
@@ -163,7 +162,6 @@ local function reg(id, e)
     end
 end
 
--- forward decl (из-за порядка)
 local makeToggle, makeSlider, makeDropdown, makeButton
 local makeLabel, makeInfo, makeWarn, makeColor
 local makeKey, makeInput
@@ -425,8 +423,6 @@ function lib:new(cfg)
     self.Library = lib
     return self
 end
-
--- ============== widgets ==============
 
 makeToggle = function(g, o)
     o = o or {}
@@ -811,8 +807,10 @@ makeButton = function(g, o)
     fr.MouseEnter:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.ElementHover}):Play() end)
     fr.MouseLeave:Connect(function() tw:Create(fr, TweenInfo.new(0.15), {BackgroundColor3 = lib.Scheme.Element}):Play() end)
 
-    reg(id, {Id=id, Type="Button", Frame=fr})
-    table.insert(g.Widgets, {Id=id, Type="Button", Frame=fr})
+    local e = {Id=id, Type="Button", Frame=fr}
+    reg(id, e)
+    table.insert(g.Widgets, e)
+    table.insert(g.Tab.Widgets, e)
     return {}
 end
 
@@ -1093,8 +1091,5 @@ makeInput = function(g, o)
     table.insert(g.Tab.Widgets, e)
     return { SetValue=function(_,v) e.SetValue(e,v) end, Get=function() return e.Value end }
 end
-
--- TODO: add tabs-inside-tabs someday
--- color: maybe add rgb input later
 
 return lib
